@@ -1,0 +1,38 @@
+body {
+  background-color: #f8f9fa;
+}
+
+header.bg-dark {
+  background-color: #212529 !important;
+}
+
+header.bg-dark h1 {
+  font-weight: 700;
+}
+
+header.bg-dark p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.card {
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-img-top {
+  object-fit: cover;
+}
+
+footer.bg-dark {
+  background-color: #212529 !important;
+}
+
+footer p {
+  font-size: 0.875rem;
+}

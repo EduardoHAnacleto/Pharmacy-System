@@ -1,0 +1,341 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\GitHub\\Pharmacy-System\\backend\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\dockerfile||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:dockerfile||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\pharmacyworkerapi.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:pharmacyworkerapi.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\controllers\\itempromotioncontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:controllers\\itempromotioncontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\utility\\utilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:utility\\utilities.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\dtos\\itempromotion\\categorydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:dtos\\itempromotion\\categorydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\dtos\\itempromotion\\itempromotioncreaterequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:dtos\\itempromotion\\itempromotioncreaterequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\dtos\\itempromotion\\itempromotionresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:dtos\\itempromotion\\itempromotionresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\dtos\\pagedresultdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:dtos\\pagedresultdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\hubs\\promotionshub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:hubs\\promotionshub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\models\\category.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:models\\category.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\models\\producttype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:models\\producttype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\models\\itempromotion.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:models\\itempromotion.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|c:\\github\\pharmacy-system\\backend\\services\\redisservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B65A0177-8475-4212-84BB-07FF163336A2}|PharmacyWorkerAPI.csproj|solutionrelative:services\\redisservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\GitHub\\PharmacyWorkerAPI\\Database\\schema.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\GitHub\\PharmacyWorkerAPI\\docker-compose.yml||{06C066C6-04A2-4E5D-8202-439FD4234EF1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\GitHub\\PharmacyWorkerAPI\\Database\\seed.sql||{CC5D8DF0-88F4-4BB2-9DBB-B48CEE65C30A}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 6,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{eefa5220-e298-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "appsettings.Development.json",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\appsettings.Development.json",
+              "RelativeDocumentMoniker": "appsettings.Development.json",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\appsettings.Development.json",
+              "RelativeToolTip": "appsettings.Development.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-02-19T01:48:54.256Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Data\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "Data\\AppDbContext.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Data\\AppDbContext.cs",
+              "RelativeToolTip": "Data\\AppDbContext.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAACQAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-12T09:55:44.64Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "ItemPromotionController.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Controllers\\ItemPromotionController.cs",
+              "RelativeDocumentMoniker": "Controllers\\ItemPromotionController.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Controllers\\ItemPromotionController.cs",
+              "RelativeToolTip": "Controllers\\ItemPromotionController.cs",
+              "ViewState": "AgIAAP0AAAAAAAAAAAAgwLMBAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-12T08:02:00.366Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAcAAAAAAAAAAAAawBcAAAADAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-12T09:49:56.929Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Dockerfile",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Dockerfile",
+              "RelativeDocumentMoniker": "Dockerfile",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Dockerfile",
+              "RelativeToolTip": "Dockerfile",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-02-03T05:22:16.947Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-10-12T09:49:09.697Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Utilities.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Utility\\Utilities.cs",
+              "RelativeDocumentMoniker": "Utility\\Utilities.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Utility\\Utilities.cs",
+              "RelativeToolTip": "Utility\\Utilities.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-14T10:30:45.384Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "PharmacyWorkerAPI.http",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\PharmacyWorkerAPI.http",
+              "RelativeDocumentMoniker": "PharmacyWorkerAPI.http",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\PharmacyWorkerAPI.http",
+              "RelativeToolTip": "PharmacyWorkerAPI.http",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003502|",
+              "WhenOpened": "2026-02-03T06:11:00.608Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "CategoryDto.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\DTOs\\ItemPromotion\\CategoryDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ItemPromotion\\CategoryDto.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\DTOs\\ItemPromotion\\CategoryDto.cs",
+              "RelativeToolTip": "DTOs\\ItemPromotion\\CategoryDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-08T07:14:37.855Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "ItemPromotionCreateRequestDto.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\DTOs\\ItemPromotion\\ItemPromotionCreateRequestDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ItemPromotion\\ItemPromotionCreateRequestDto.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\DTOs\\ItemPromotion\\ItemPromotionCreateRequestDto.cs",
+              "RelativeToolTip": "DTOs\\ItemPromotion\\ItemPromotionCreateRequestDto.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAgwBsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T07:52:55.149Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "ItemPromotionResponseDto.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\DTOs\\ItemPromotion\\ItemPromotionResponseDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ItemPromotion\\ItemPromotionResponseDto.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\DTOs\\ItemPromotion\\ItemPromotionResponseDto.cs",
+              "RelativeToolTip": "DTOs\\ItemPromotion\\ItemPromotionResponseDto.cs",
+              "ViewState": "AgIAABAAAAAAAAAAAAAkwBAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T07:53:18.92Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "PagedResultDto.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\DTOs\\PagedResultDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\PagedResultDto.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\DTOs\\PagedResultDto.cs",
+              "RelativeToolTip": "DTOs\\PagedResultDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAlAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T13:02:12.494Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "PromotionsHub.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Hubs\\PromotionsHub.cs",
+              "RelativeDocumentMoniker": "Hubs\\PromotionsHub.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Hubs\\PromotionsHub.cs",
+              "RelativeToolTip": "Hubs\\PromotionsHub.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAABUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-12T09:56:58.48Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "Category.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Models\\Category.cs",
+              "RelativeDocumentMoniker": "Models\\Category.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Models\\Category.cs",
+              "RelativeToolTip": "Models\\Category.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T02:27:26.297Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "ProductType.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Models\\ProductType.cs",
+              "RelativeDocumentMoniker": "Models\\ProductType.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Models\\ProductType.cs",
+              "RelativeToolTip": "Models\\ProductType.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T02:28:27.228Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "ItemPromotion.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Models\\ItemPromotion.cs",
+              "RelativeDocumentMoniker": "Models\\ItemPromotion.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Models\\ItemPromotion.cs",
+              "RelativeToolTip": "Models\\ItemPromotion.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAA7wBcAAAAXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-12T08:00:24.769Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "RedisService.cs",
+              "DocumentMoniker": "C:\\GitHub\\Pharmacy-System\\backend\\Services\\RedisService.cs",
+              "RelativeDocumentMoniker": "Services\\RedisService.cs",
+              "ToolTip": "C:\\GitHub\\Pharmacy-System\\backend\\Services\\RedisService.cs",
+              "RelativeToolTip": "Services\\RedisService.cs",
+              "ViewState": "AgIAACwAAAAAAAAAAAAgwCsAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-14T10:27:23.761Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "docker-compose.yml",
+              "DocumentMoniker": "C:\\GitHub\\PharmacyWorkerAPI\\docker-compose.yml",
+              "RelativeDocumentMoniker": "..\\..\\PharmacyWorkerAPI\\docker-compose.yml",
+              "ToolTip": "C:\\GitHub\\PharmacyWorkerAPI\\docker-compose.yml",
+              "RelativeToolTip": "..\\..\\PharmacyWorkerAPI\\docker-compose.yml",
+              "ViewState": "AgIAACoAAAAAAAAAAAAqwD8AAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003775|",
+              "WhenOpened": "2026-02-04T01:47:02.441Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "schema.sql",
+              "DocumentMoniker": "C:\\GitHub\\PharmacyWorkerAPI\\Database\\schema.sql",
+              "RelativeDocumentMoniker": "..\\..\\PharmacyWorkerAPI\\Database\\schema.sql",
+              "ToolTip": "C:\\GitHub\\PharmacyWorkerAPI\\Database\\schema.sql",
+              "RelativeToolTip": "..\\..\\PharmacyWorkerAPI\\Database\\schema.sql",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-02-08T09:35:41.01Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "seed.sql",
+              "DocumentMoniker": "C:\\GitHub\\PharmacyWorkerAPI\\Database\\seed.sql",
+              "RelativeDocumentMoniker": "..\\..\\PharmacyWorkerAPI\\Database\\seed.sql",
+              "ToolTip": "C:\\GitHub\\PharmacyWorkerAPI\\Database\\seed.sql",
+              "RelativeToolTip": "..\\..\\PharmacyWorkerAPI\\Database\\seed.sql",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
+              "WhenOpened": "2026-02-06T09:12:02.215Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

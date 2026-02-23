@@ -1,0 +1,111 @@
+########################################
+# GENERAL
+########################################
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+########################################
+# FRONTEND (Vue + Vite + TypeScript)
+########################################
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.output/
+
+# Local env overrides
+frontend/.env.local
+frontend/.env.*.local
+
+# Build cache
+frontend/.cache/
+frontend/.eslintcache
+
+########################################
+# BACKEND (.NET)
+########################################
+
+# Build folders
+backend/bin/
+backend/obj/
+
+# User-specific files
+backend/*.user
+backend/*.suo
+backend/*.userosscache
+backend/*.sln.docstates
+
+# Rider / VS Code / VS
+backend/.idea/
+backend/.vs/
+
+########################################
+# DATABASE / VOLUMES
+########################################
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker volumes (if stored locally)
+docker-volumes/
+
+########################################
+# DOCKER
+########################################
+
+# Docker override files
+docker-compose.override.yml
+
+# Temporary docker files
+*.tar
+
+########################################
+# IDEs
+########################################
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+# Visual Studio
+.vs/
+
+########################################
+# OS FILES
+########################################
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+########################################
+# TEST COVERAGE
+########################################
+
+coverage/
+*.lcov
+
+########################################
+# TEMP FILES
+########################################
+
+tmp/
+temp/
+*.tmp
