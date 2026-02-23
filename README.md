@@ -107,8 +107,8 @@ Client → Vue Frontend → .NET REST API → MySQL Database
 ### 1. Clone the Repository
 
 ``` bash
-git clone https://github.com/eduardohanacleto/pharmacy.git
-cd farmavilmo
+git clone https://github.com/eduardohanacleto/pharmacy-system.git
+cd pharmacy-system
 ```
 
 ### 2. Build and Run Containers
