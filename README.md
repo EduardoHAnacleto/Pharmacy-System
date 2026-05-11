@@ -1,4 +1,4 @@
-# FarmaVilmo - Full Stack E-Commerce Pharmacy Platform
+# Full Stack E-Commerce Pharmacy Platform
 
 ## Overview
 
