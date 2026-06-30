@@ -165,14 +165,6 @@ Database: - MYSQL_ROOT_PASSWORD=StrongUserPassword - MYSQL_DATABASE=pharmacy_db
 
 ------------------------------------------------------------------------
 
-## Screenshots
-
-![Main Layout](MainLayout-1.png)
-![Shopping Cart](Cart-1.png)
-![Checkout Page](Checkout-1.png)
-![Contact Page](Contact-1.png)
-------------------------------------------------------------------------
-
 ## Production Readiness Highlights
 
 -   Separation of concerns (Frontend / API / Database)
