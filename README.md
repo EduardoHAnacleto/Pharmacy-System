@@ -1,182 +1,222 @@
 # 💊 Pharmacy System
 
-A modern Full-Stack Pharmacy Management System designed to simulate a real-world pharmacy management platform.
+<div align="center">
 
-This project demonstrates the design and development of a production-inspired business application using modern software engineering practices, scalable architecture, containerised environments, and AI-assisted development workflows.
+![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
+![Vue.js](https://img.shields.io/badge/Vue.js-3-42B883?style=for-the-badge&logo=vue.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerised-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL%20Server-Database-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
+![REST API](https://img.shields.io/badge/API-REST-009688?style=for-the-badge)
+![Git](https://img.shields.io/badge/Git-Version%20Control-F05032?style=for-the-badge&logo=git&logoColor=white)
 
----
-
-## 🚀 Overview
-
-The Pharmacy System was developed as a portfolio project to showcase practical Full-Stack Software Development skills.
-
-Rather than focusing solely on CRUD operations, the project emphasises:
-
-- Clean architecture
-- Modular application design
-- Business-oriented workflows
-- Docker-based development
-- RESTful API design
-- Modern frontend development
-- Maintainable and scalable software
-
-The project also served as an environment for applying modern AI-assisted software engineering methodologies, including Spec-Driven Development and structured implementation workflows.
+</div>
 
 ---
 
-## ✨ Features
+## 📖 Overview
 
-- User Authentication
-- Product Management
-- Inventory Management
-- Customer Management
-- Pharmacy Business Workflows
-- Responsive User Interface
-- RESTful API Integration
-- Database Persistence
-- Containerised Development Environment
-- Modern Component-Based Frontend
+Pharmacy System is a modern Full-Stack Pharmacy Management System developed to support real pharmacy operations.
+
+The application is currently deployed in a production environment and is actively used in daily business activities. It was designed to provide a scalable, maintainable and business-oriented solution while demonstrating modern Full-Stack Software Engineering practices.
+
+The project combines modern frontend technologies, RESTful APIs, containerised development, SQL databases and AI-assisted software engineering workflows.
 
 ---
 
-## 🏗 Architecture
+## ✨ Key Features
 
-The application follows a modern layered architecture.
+- 🔐 User Authentication
+- 💊 Product Management
+- 📦 Inventory Management
+- 👥 Customer Management
+- 🧾 Sales Management
+- 📊 Business Dashboard
+- 🔄 REST API Integration
+- 📱 Responsive User Interface
+- 🐳 Dockerised Development Environment
+- ⚙️ Modular Application Architecture
+
+---
+
+# 🏗 Architecture
+
+The application follows a layered Full-Stack architecture.
 
 ```text
-Vue.js Frontend
-        │
- REST API
-        │
- ASP.NET Backend
-        │
- SQL Server Database
+                 Vue.js Frontend
+                        │
+                        │ REST API
+                        ▼
+               ASP.NET Core Backend
+                        │
+                        ▼
+                 SQL Server Database
 ```
 
-Each component is isolated, making the project easier to maintain, extend, and deploy.
+This separation of concerns improves maintainability, scalability and future extensibility.
 
 ---
 
-## 💻 Technology Stack
+# 💻 Technology Stack
 
-### Backend
+| Layer | Technologies |
+|--------|--------------|
+| Frontend | Vue.js • Vue 3 • TypeScript • HTML • CSS |
+| Backend | ASP.NET Core • C# |
+| API | RESTful APIs |
+| Database | SQL Server |
+| DevOps | Docker • Docker Compose |
+| Version Control | Git |
 
-- ASP.NET Core
-- C#
-- REST APIs
+---
 
-### Frontend
+# 🤖 Development Methodology
 
-- Vue.js
-- Vue 3
-- TypeScript
-- HTML
-- CSS
+This project was developed following modern software engineering methodologies.
 
-### Database
+### AI-Assisted Development
 
-- SQL Server
+AI-assisted engineering tools were integrated throughout the development lifecycle to:
 
-### DevOps
+- Improve development efficiency
+- Accelerate feature implementation
+- Explore architectural alternatives
+- Reduce implementation errors
+- Improve code quality
+- Support debugging and refactoring
 
-- Docker
-- Docker Compose
-- Git
+Developer oversight was maintained throughout all stages of implementation.
 
-### Development
+---
 
-- Spec-Driven Development
-- AI-Assisted Development
+### Spec-Driven Development
+
+Features were designed and specified before implementation using structured specifications.
+
+This approach improved:
+
+- Requirement clarity
+- Consistency
+- Maintainability
+- Development speed
+- Communication between components
+
+---
+
+### Engineering Practices
+
 - Modular Architecture
-
----
-
-## 🤖 Development Workflow
-
-This project was developed using modern software engineering practices to improve maintainability, consistency, and development efficiency.
-
-Key practices include:
-
-- Feature specification before implementation
-- Spec-Driven Development
-- AI-assisted software engineering using Claude Code
-- Modular application architecture
-- Docker-based local development
+- Feature-based organisation
+- Docker-first development
 - Git version control
-- Iterative feature development
-
-AI tools were used to assist with implementation, architecture discussions, UI refinement, code review, and identifying potential improvements while maintaining developer oversight throughout the project.
-
----
-
-## 📂 Project Structure
-
-```text
-Frontend/
-Backend/
-Database/
-Docker/
-Documentation/
-```
+- REST API design
+- Component-based frontend
+- Clean and maintainable code
 
 ---
 
-## 🚀 Getting Started
+# 🚀 Getting Started
 
-### Clone the repository
+## Clone the repository
 
 ```bash
 git clone https://github.com/EduardoHAnacleto/Pharmacy-System.git
 ```
 
-### Start the application
+## Start with Docker
 
 ```bash
 docker compose up --build
 ```
 
-Once the containers are running, the application will be available locally.
+The application will automatically start all required services.
 
 ---
 
-## 🎯 Project Goals
+# 📂 Project Structure
 
-The primary objectives of this project were to:
+```text
+Pharmacy-System
 
-- Build a realistic business management system
-- Demonstrate Full-Stack development skills
-- Apply modern engineering methodologies
-- Explore AI-assisted software development workflows
-- Produce production-quality portfolio software
+├── Frontend
+│
+├── Backend
+│
+├── Database
+│
+├── Docker
+│
+└── Documentation
+```
 
 ---
 
-## 📈 Future Improvements
+# 🎯 Project Goals
 
-Planned enhancements include:
+The primary objectives of this project were:
 
-- Automated testing
-- CI/CD pipeline
+- Build a production-ready business application
+- Apply modern Full-Stack development practices
+- Demonstrate scalable software architecture
+- Implement containerised development workflows
+- Explore AI-assisted software engineering methodologies
+- Deliver maintainable and extensible software
+
+---
+
+# 📈 Future Roadmap
+
+Planned improvements include:
+
+- Unit Testing
+- Integration Testing
+- CI/CD Pipeline
 - Role-Based Access Control
-- Reporting Dashboard
 - Audit Logs
-- Cloud deployment
-- Monitoring and logging
-- Performance optimisation
+- Reporting Module
+- Cloud Deployment
+- Monitoring & Logging
+- Performance Optimisation
 
 ---
 
-## 👨‍💻 About
+# 🔒 Production Environment
 
-Developed by **Eduardo Hipolito Anacleto**
+This application is currently deployed in a production environment supporting the daily operations of a real pharmacy.
+
+For privacy and security reasons, the production environment is not publicly accessible.
+
+---
+
+# 👨‍💻 About
+
+Developed by **Eduardo Hipólito Anacleto**
 
 Full-Stack Software Developer
 
 🇳🇿 Auckland, New Zealand
 
+Master of Information Technology (Data Science)
+
+Bachelor of Information Systems
+
 Currently seeking Software Development opportunities across New Zealand.
 
-### Connect
+## 📫 Connect
 
-- LinkedIn: https://linkedin.com/in/eduardohipolitoanacleto
-- GitHub: https://github.com/EduardoHAnacleto
+**LinkedIn**
+
+https://linkedin.com/in/eduardohipolitoanacleto
+
+**GitHub**
+
+https://github.com/EduardoHAnacleto
+
+**Email**
+
+eduardohanacleto@gmail.com
+
+---
+
+⭐ If you found this project interesting, feel free to leave a star.
