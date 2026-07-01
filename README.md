@@ -1,202 +1,182 @@
-# Full Stack E-Commerce Pharmacy Platform
+# 💊 Pharmacy System
 
-## Overview
+A modern Full-Stack Pharmacy Management System designed to simulate a real-world pharmacy management platform.
 
-This project is a full-stack pharmacy e-commerce platform designed to
-demonstrate production-ready architecture, clean code practices,
-containerization, and scalable backend/frontend integration.
+This project demonstrates the design and development of a production-inspired business application using modern software engineering practices, scalable architecture, containerised environments, and AI-assisted development workflows.
 
-This project was built as a portfolio-ready application to showcase:
+---
 
--   Frontend architecture with Vue 3 + TypeScript
--   RESTful API development with .NET
--   MySQL relational database design
--   Docker-based containerized deployment
--   Full environment orchestration with Docker Compose
+## 🚀 Overview
 
-------------------------------------------------------------------------
+The Pharmacy System was developed as a portfolio project to showcase practical Full-Stack Software Development skills.
 
-## Architecture
+Rather than focusing solely on CRUD operations, the project emphasises:
 
-The system is composed of three main services:
+- Clean architecture
+- Modular application design
+- Business-oriented workflows
+- Docker-based development
+- RESTful API design
+- Modern frontend development
+- Maintainable and scalable software
 
-1.  Frontend (Vue 3 + Vite)
-2.  Backend API (.NET)
-3.  MySQL 8 Database
+The project also served as an environment for applying modern AI-assisted software engineering methodologies, including Spec-Driven Development and structured implementation workflows.
 
-All services are containerized and orchestrated via Docker Compose.
+---
 
-### High-Level Flow
+## ✨ Features
 
-Client → Vue Frontend → .NET REST API → MySQL Database
+- User Authentication
+- Product Management
+- Inventory Management
+- Customer Management
+- Pharmacy Business Workflows
+- Responsive User Interface
+- RESTful API Integration
+- Database Persistence
+- Containerised Development Environment
+- Modern Component-Based Frontend
 
-------------------------------------------------------------------------
+---
 
-## Tech Stack
+## 🏗 Architecture
 
-### Frontend
+The application follows a modern layered architecture.
 
--   Vue 3 (Composition API)
--   TypeScript
--   Pinia (State Management)
--   Vite
--   Bootstrap 5
+```text
+Vue.js Frontend
+        │
+ REST API
+        │
+ ASP.NET Backend
+        │
+ SQL Server Database
+```
+
+Each component is isolated, making the project easier to maintain, extend, and deploy.
+
+---
+
+## 💻 Technology Stack
 
 ### Backend
 
--   .NET 9 (ASP.NET Core Web API)
--   Entity Framework Core
--   RESTful architecture
+- ASP.NET Core
+- C#
+- REST APIs
+
+### Frontend
+
+- Vue.js
+- Vue 3
+- TypeScript
+- HTML
+- CSS
 
 ### Database
 
--   MySQL 8.0
+- SQL Server
 
-### DevOps & Infrastructure
-
--   Docker
--   Docker Compose
--   Multi-container orchestration
--   Environment-based configuration
-
-------------------------------------------------------------------------
-
-## Repository Structure
-
-    Pharmacy-System/
-    │
-    ├── frontend/              # Vue 3 + TypeScript application
-    │   ├── src/
-    │   ├── public/
-    │   ├── Dockerfile
-    │   └── vite.config.ts
-    │
-    ├── backend/                   # .NET Web API
-    │   ├── Controllers/
-    │   ├── Models/
-    │   ├── Data/
-    │   ├── Dockerfile
-    │   └── Program.cs
-    │
-    |
-    ├── database/             # MySQL Database schema
-    │   ├── schema.sql
-    │   ├── seed.sql
-    |
-    |
-    ├── docker-compose.yml     # Full stack orchestration
-    ├── .env.development
-    |
-    └── README.md
-
-------------------------------------------------------------------------
-
-## Features
-
--   Product listing (HomeView)
--   Shopping cart (CartView)
--   Delivery & pickup logic
--   Customer information validation (Name + CPF (ID) with validation)
--   Responsive design
--   Dockerized production build
-
-------------------------------------------------------------------------
-
-## Running the Project (Development Mode)
-
-### 1. Clone the Repository
-
-``` bash
-git clone https://github.com/eduardohanacleto/pharmacy-system.git
-cd pharmacy-system
-```
-
-### 2. Build and Run Containers
-
-``` bash
-docker compose up --build
-```
-
-### 3. Access the Application
-
-Frontend: http://localhost
-
-API: http://localhost:5000/swagger
-
-MySQL: localhost:3306
-
-------------------------------------------------------------------------
-
-## Running with Prebuilt Images (Production Mode)
-
-This project provides prebuilt Docker images published to GitHub Container Registry (GHCR).
-
-No local build is required.
-
-### Requirements
+### DevOps
 
 - Docker
 - Docker Compose
+- Git
 
-### Run the Application
+### Development
+
+- Spec-Driven Development
+- AI-Assisted Development
+- Modular Architecture
+
+---
+
+## 🤖 Development Workflow
+
+This project was developed using modern software engineering practices to improve maintainability, consistency, and development efficiency.
+
+Key practices include:
+
+- Feature specification before implementation
+- Spec-Driven Development
+- AI-assisted software engineering using Claude Code
+- Modular application architecture
+- Docker-based local development
+- Git version control
+- Iterative feature development
+
+AI tools were used to assist with implementation, architecture discussions, UI refinement, code review, and identifying potential improvements while maintaining developer oversight throughout the project.
+
+---
+
+## 📂 Project Structure
+
+```text
+Frontend/
+Backend/
+Database/
+Docker/
+Documentation/
+```
+
+---
+
+## 🚀 Getting Started
+
+### Clone the repository
 
 ```bash
-docker compose up
+git clone https://github.com/EduardoHAnacleto/Pharmacy-System.git
+```
 
-------------------------------------------------------------------------
+### Start the application
 
-## Docker Deployment Strategy
+```bash
+docker compose up --build
+```
 
--   Frontend runs in a Node-based container
--   API runs in a .NET runtime container
--   MySQL runs as an official MySQL 8 container
--   All services communicate via Docker internal network
+Once the containers are running, the application will be available locally.
 
-------------------------------------------------------------------------
+---
 
-## Environment Variables
+## 🎯 Project Goals
 
-Example configuration:
+The primary objectives of this project were to:
 
-API: - ASPNETCORE_ENVIRONMENT=Production -
-ConnectionStrings\_\_DefaultConnection=Server=db;Port=3306;Database=pharmacy_db;User=pharmacy_user;Password=StrongUserPassword;
+- Build a realistic business management system
+- Demonstrate Full-Stack development skills
+- Apply modern engineering methodologies
+- Explore AI-assisted software development workflows
+- Produce production-quality portfolio software
 
-Database: - MYSQL_ROOT_PASSWORD=StrongUserPassword - MYSQL_DATABASE=pharmacy_db
+---
 
-------------------------------------------------------------------------
+## 📈 Future Improvements
 
-## Production Readiness Highlights
+Planned enhancements include:
 
--   Separation of concerns (Frontend / API / Database)
--   Containerized services
--   Stateless API design
--   Environment-based configuration
--   Scalable architecture foundation
+- Automated testing
+- CI/CD pipeline
+- Role-Based Access Control
+- Reporting Dashboard
+- Audit Logs
+- Cloud deployment
+- Monitoring and logging
+- Performance optimisation
 
-------------------------------------------------------------------------
+---
 
-## Future Improvements
+## 👨‍💻 About
 
--   Authentication (JWT-based)
--   Admin dashboard
--   Order persistence
--   Payment gateway integration
--   CI/CD pipeline
--   Cloud deployment (AWS, Azure, or GCP)
+Developed by **Eduardo Hipolito Anacleto**
 
-------------------------------------------------------------------------
+Full-Stack Software Developer
 
-## Author
+🇳🇿 Auckland, New Zealand
 
-Eduardo Hipolito Anacleto
+Currently seeking Software Development opportunities across New Zealand.
 
-Full Stack Developer \| 
-.NET \| Python  \|
-Vue \| Vue.Js \| Javascript \|
-Docker \| MySQL \| PostgreSQL \| SQL Server 
+### Connect
 
-------------------------------------------------------------------------
-
-## License
-
-This project is for portfolio and demonstration purposes.
+- LinkedIn: https://linkedin.com/in/eduardohipolitoanacleto
+- GitHub: https://github.com/EduardoHAnacleto
