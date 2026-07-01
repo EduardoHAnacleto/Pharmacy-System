@@ -135,6 +135,14 @@ Pharmacy-System
 
 ---
 
+# Business Impact
+
+This system was developed to support the operational needs of a real pharmacy and is currently used in production.
+
+The project demonstrates the ability to design, develop, deploy and maintain software that supports real business processes, rather than serving solely as a portfolio or academic exercise.
+
+---
+
 # About
 
 Developed by **Eduardo Hipolito Anacleto**
