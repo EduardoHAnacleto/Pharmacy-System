@@ -127,6 +127,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import { track } from '@/services/analytics'
 
 const cart = useCartStore()
 
@@ -135,6 +136,8 @@ const selectedDelivery = ref(cart.deliveryType)
 
 onMounted(() => {
   cart.loadFromStorage()
+
+  if (cart.items.length > 0) track('cart_view')
 })
 
 // SYNC DELIVERY TYPE

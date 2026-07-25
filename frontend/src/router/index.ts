@@ -35,6 +35,12 @@ const router = createRouter({
       component: () => import('@/views/AdminView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/admin/insights',
+      name: 'insights',
+      component: () => import('@/views/InsightsView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 

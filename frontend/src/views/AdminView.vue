@@ -4,7 +4,12 @@
       <!-- HEADER -->
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3>Administração de Promoções</h3>
-        <button class="btn btn-outline-danger btn-sm" @click="logout">Sair</button>
+        <div class="d-flex gap-2">
+          <RouterLink class="btn btn-outline-primary btn-sm" to="/admin/insights">
+            Insights
+          </RouterLink>
+          <button class="btn btn-outline-danger btn-sm" @click="logout">Sair</button>
+        </div>
       </div>
 
       <!-- FORM -->
@@ -211,6 +216,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { usePromotionsStore } from '@/stores/promotions'
 import type { PromotionCreatePayload } from '@/stores/promotions'

@@ -3,6 +3,7 @@ import './assets/bootstrap-shop.css'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import { useCartStore } from '@/stores/cart'
+import { installUnloadFlush } from '@/services/analytics'
 import App from './App.vue'
 import router from './router'
 
@@ -17,5 +18,9 @@ app.use(router)
 
 const cart = useCartStore()
 cart.loadFromStorage()
+
+// Queued events are lost when the page unloads unless they are beaconed out,
+// and the last event of a visit is usually the most interesting one.
+installUnloadFlush()
 
 app.mount('#app')

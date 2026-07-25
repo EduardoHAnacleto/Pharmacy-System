@@ -167,6 +167,8 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useCheckoutStore } from '@/stores/checkout'
+import { track } from '@/services/analytics'
+import api from '@/services/api'
 
 const cart = useCartStore()
 const checkout = useCheckoutStore()
@@ -227,6 +229,10 @@ function openConfirmation() {
   if (!formValid) return
   if (!isPaymentValid.value) return
 
+  // Counted here rather than on page load: reaching a valid, confirmable order is
+  // the step worth measuring, not merely opening the checkout screen.
+  track('checkout_started')
+
   showModal.value = true
 }
 
@@ -242,7 +248,12 @@ function getFormattedDateTime() {
   return `${date} às ${time}`
 }
 
-function confirmOrder() {
+async function confirmOrder() {
+  // Recorded before the handoff, and deliberately without the customer: name,
+  // CPF, postcode and address stay in this browser and in the WhatsApp message
+  // below. The API has no field for them.
+  const orderNumber = await recordOrder()
+
   const itens = cart.items
     .map((i) => `• ${i.name} x${i.quantity} — R$ ${(i.price * i.quantity).toFixed(2)}`)
     .join('\n')
@@ -273,7 +284,7 @@ function confirmOrder() {
   const orderDateTime = getFormattedDateTime()
 
   const message = `
-🛒 *NOVO PEDIDO*
+🛒 *NOVO PEDIDO*${orderNumber ? ` #${orderNumber}` : ''}
 🕒 ${orderDateTime}
 
 👤 Nome: ${checkout.fullName}
@@ -288,11 +299,43 @@ ${itens}
 💰 Total: R$ ${cart.finalTotal.toFixed(2)}
   `.trim()
 
+  track('whatsapp_click')
+
   window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank')
 
   cart.clearCart()
   checkout.reset()
   showModal.value = false
   router.push('/')
+}
+
+/**
+ * Records the order for reporting.
+ *
+ * Returns the short reference the operator can use to match this row to the
+ * WhatsApp conversation, or null when recording failed — a reporting write must
+ * never stop a customer from placing their order.
+ */
+async function recordOrder(): Promise<string | null> {
+  try {
+    const { data } = await api.post<{ orderNumber: string; total: number }>('/orders', {
+      fulfillmentType: cart.deliveryType,
+      paymentMethod:
+        checkout.paymentMethod === 'pix' ? 'pix' : (checkout.deliveryPaymentType ?? null),
+      // City only. Street, number and postcode are not sent.
+      deliveryCity: cart.deliveryType === 'delivery' ? checkout.city : null,
+      deliveryFee: cart.deliveryType === 'delivery' && cart.canDeliver ? cart.deliveryFee : 0,
+      items: cart.items.map((i) => ({
+        promotionId: i.id,
+        name: i.name,
+        unitPrice: i.price,
+        quantity: i.quantity,
+      })),
+    })
+
+    return data.orderNumber
+  } catch {
+    return null
+  }
 }
 </script>
