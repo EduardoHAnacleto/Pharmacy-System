@@ -32,11 +32,17 @@ namespace PharmacyWorkerAPI.Mapping
                 DateStart = p.DateStart,
                 DateEnd = p.DateEnd,
 
-                IsActive = p.IsActive,
+                Status = p.Status,
+                ArchivedAt = p.ArchivedAt,
+                ImageMissing = p.MediaAsset != null && p.MediaAsset.IsMissing,
+                SourcePromotionId = p.SourcePromotionId,
+
                 CategoryId = p.CategoryId,
                 ProductType = p.ProductType,
                 CreatedByUserId = p.CreatedByUserId,
                 CreatedByUserName = p.CreatedByUserName,
+                CreatedAt = p.CreatedAt,
+                UpdatedAt = p.UpdatedAt,
             };
 
         private static readonly Func<ItemPromotion, ItemPromotionResponseDto> Compiled =

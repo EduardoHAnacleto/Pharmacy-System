@@ -80,6 +80,12 @@ public class ApiFixture : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("AdminSeed:Username", AdminUsername);
         builder.UseSetting("AdminSeed:Password", AdminPassword);
         builder.UseSetting("Cors:AllowedOrigins", "http://localhost");
+
+        // Tests log in repeatedly from one address, so the production limit would
+        // throttle the suite itself. The test that asserts throttling lowers this
+        // for its own host via WithWebHostBuilder.
+        builder.UseSetting("RateLimit:LoginPermitLimit", "10000");
+
         builder.UseEnvironment("Production");
     }
 

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Hosting;
 using PharmacyWorkerAPI.DTOs.Auth;
 using Xunit;
 
@@ -118,13 +119,21 @@ public class AuthEndpointsTests
     public async Task Login_IsRateLimitedAfterRepeatedFailures()
     {
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
-        using var client = _fixture.CreateClient();
+
+        // Its own host with a tiny limit, reusing the same containers. Sharing the
+        // suite's host would mean this test consumes the window and every later
+        // login fails with 429 for an unrelated reason — which is exactly what
+        // happened the first time this ran on CI.
+        using var throttled = _fixture.WithWebHostBuilder(builder =>
+            builder.UseSetting("RateLimit:LoginPermitLimit", "3"));
+
+        using var client = throttled.CreateClient();
 
         HttpStatusCode? lastStatus = null;
 
-        // The window permits 5; the browser-side lockout it replaced could simply
-        // be cleared from localStorage.
-        for (var attempt = 0; attempt < 8; attempt++)
+        // The browser-side lockout this replaced could simply be cleared from
+        // localStorage.
+        for (var attempt = 0; attempt < 6; attempt++)
         {
             var response = await client.PostAsJsonAsync(
                 "/api/v1/auth/login", Credentials("no-such-user", "bad"));

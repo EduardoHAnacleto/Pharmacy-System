@@ -1,18 +1,21 @@
-using PharmacyWorkerAPI.Utility;
-
 namespace PharmacyWorkerAPI.Services
 {
+    /// <summary>
+    /// File storage for promotion images. Knows nothing about promotions or
+    /// validation — <see cref="MediaAssetService"/> owns both.
+    /// </summary>
     public interface IPromotionImageStorage
     {
-        /// <summary>
-        /// Validates and stores an uploaded image, returning the public relative URL.
-        /// </summary>
-        /// <returns>
-        /// The URL on success, or <c>null</c> when the content is not a supported image.
-        /// </returns>
-        Task<string?> SaveAsync(IFormFile image, CancellationToken ct = default);
+        /// <summary>Writes bytes under a generated name and returns the public relative URL.</summary>
+        Task<string> WriteAsync(byte[] content, string extension, CancellationToken ct = default);
 
-        /// <summary>Deletes a stored image, ignoring anything outside the uploads directory.</summary>
+        /// <summary>Whether the file behind a stored relative URL is present.</summary>
+        bool Exists(string? imagePath);
+
+        /// <summary>Reads a stored file, or null when it is absent or out of bounds.</summary>
+        Task<byte[]?> ReadAsync(string? imagePath, CancellationToken ct = default);
+
+        /// <summary>Deletes a file, refusing anything outside the uploads directory.</summary>
         void Delete(string? imagePath);
     }
 
@@ -38,41 +41,59 @@ namespace PharmacyWorkerAPI.Services
         private string UploadsRoot =>
             Path.GetFullPath(Path.Combine(WebRoot, "images", "promotions"));
 
-        public async Task<string?> SaveAsync(IFormFile image, CancellationToken ct = default)
+        public async Task<string> WriteAsync(
+            byte[] content, string extension, CancellationToken ct = default)
         {
-            if (image.Length < ImageValidator.HeaderLength)
-                return null;
-
-            // The Content-Type header and the file name are both supplied by the
-            // client, so the format is decided from the bytes instead.
-            var header = new byte[ImageValidator.HeaderLength];
-            await using (var probe = image.OpenReadStream())
-            {
-                await probe.ReadExactlyAsync(header.AsMemory(0, header.Length), ct);
-            }
-
-            var extension = ImageValidator.DetectExtension(header);
-            if (extension == null)
-                return null;
-
             var uploadsFolder = UploadsRoot;
             Directory.CreateDirectory(uploadsFolder);
 
+            // The extension comes from the detected format, never from a
+            // client-supplied file name.
             var fileName = $"{Guid.NewGuid()}{extension}";
             var filePath = Path.Combine(uploadsFolder, fileName);
 
-            await using (var stream = new FileStream(filePath, FileMode.CreateNew))
-            {
-                await image.CopyToAsync(stream, ct);
-            }
+            await File.WriteAllBytesAsync(filePath, content, ct);
 
             return $"{PublicPrefix}/{fileName}";
         }
 
+        public bool Exists(string? imagePath)
+        {
+            var resolved = ResolveContained(imagePath);
+
+            return resolved != null && File.Exists(resolved);
+        }
+
+        public async Task<byte[]?> ReadAsync(string? imagePath, CancellationToken ct = default)
+        {
+            var resolved = ResolveContained(imagePath);
+
+            if (resolved == null || !File.Exists(resolved))
+                return null;
+
+            return await File.ReadAllBytesAsync(resolved, ct);
+        }
+
         public void Delete(string? imagePath)
         {
-            if (string.IsNullOrWhiteSpace(imagePath))
+            var resolved = ResolveContained(imagePath);
+
+            if (resolved == null)
                 return;
+
+            if (File.Exists(resolved))
+                File.Delete(resolved);
+        }
+
+        /// <summary>
+        /// Maps a stored relative URL to an absolute path, returning null when it
+        /// escapes the uploads directory. ImagePath comes from the database, but a
+        /// value being stored there is not a reason to trust it as a filesystem path.
+        /// </summary>
+        private string? ResolveContained(string? imagePath)
+        {
+            if (string.IsNullOrWhiteSpace(imagePath))
+                return null;
 
             var relative = imagePath
                 .TrimStart('/')
@@ -81,21 +102,15 @@ namespace PharmacyWorkerAPI.Services
             var uploadsRoot = UploadsRoot;
             var resolved = Path.GetFullPath(Path.Combine(WebRoot, relative));
 
-            // ImagePath comes from the database, but a value being stored there is
-            // not a reason to hand an arbitrary path to File.Delete.
-            var isContained = resolved.StartsWith(
-                uploadsRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal);
-
-            if (!isContained)
+            if (!resolved.StartsWith(uploadsRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
             {
                 _logger.LogWarning(
-                    "Refusing to delete {ImagePath}: resolves outside the uploads directory.",
+                    "Refusing to touch {ImagePath}: resolves outside the uploads directory.",
                     imagePath);
-                return;
+                return null;
             }
 
-            if (File.Exists(resolved))
-                File.Delete(resolved);
+            return resolved;
         }
     }
 }

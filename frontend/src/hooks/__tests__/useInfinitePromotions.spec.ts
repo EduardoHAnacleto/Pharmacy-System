@@ -20,11 +20,16 @@ function promotion(id: number): ItemPromotion {
     imageUrl: `/images/promotions/${id}.png`,
     dateStart: '2026-01-01T00:00:00Z',
     dateEnd: '2026-12-31T00:00:00Z',
-    isActive: true,
+    status: 'Active',
+    archivedAt: null,
+    imageMissing: false,
+    sourcePromotionId: null,
     categoryId: 1,
     productType: 'default',
     createdByUserId: 1,
     createdByUserName: 'admin',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: null,
   }
 }
 

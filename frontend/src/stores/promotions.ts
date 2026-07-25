@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
-import type { ItemPromotion } from '@/types/itemPromotion'
+import type { ItemPromotion, PromotionStatus } from '@/types/itemPromotion'
+import type { PagedResult } from '@/types/pagedResult'
 
 /**
  * DTO (POST)
@@ -14,12 +15,33 @@ export interface PromotionCreatePayload {
   dateStart: string
   dateEnd: string
 
-  isActive: boolean
+  /** Whether to publish. The concrete status is derived server-side from the window. */
+  publish: boolean
   categoryId: number
   productType: string
 
   // createdByUserId / createdByUserName are not sent: the API derives them from
   // the authenticated caller's token.
+}
+
+export interface PromotionUpdatePayload {
+  name: string
+  price: number
+  priceBefore: number
+  dateStart: string
+  dateEnd: string
+  publish: boolean
+  categoryId: number
+  productType: string
+}
+
+export interface ReactivatePayload {
+  dateStart: string
+  dateEnd: string
+  name?: string
+  price?: number
+  priceBefore?: number
+  publish: boolean
 }
 
 function describeError(err: unknown, fallback: string): string {
@@ -36,20 +58,21 @@ function describeError(err: unknown, fallback: string): string {
 export const usePromotionsStore = defineStore('promotions', {
   state: () => ({
     promotions: [] as ItemPromotion[],
+    archived: [] as ItemPromotion[],
+    missingImageCount: 0,
     loading: false,
     error: null as string | null,
   }),
 
   getters: {
-    activePromotions(state): ItemPromotion[] {
-      return state.promotions.filter((p) => p.isActive)
-    },
+    activePromotions: (state): ItemPromotion[] =>
+      state.promotions.filter((p) => p.status === 'Active'),
   },
 
   actions: {
     /**
      * ==========================
-     * GET ALL PROMOTIONS (ADMIN)
+     * GET PROMOTIONS (ADMIN)
      * ==========================
      */
     async loadPromotions() {
@@ -67,8 +90,34 @@ export const usePromotionsStore = defineStore('promotions', {
 
     /**
      * ==========================
-     * CREATE PROMOTION (ADMIN)
-     * multipart/form-data
+     * GET ARCHIVED (the reactivation library)
+     * ==========================
+     */
+    async loadArchived(page = 1, pageSize = 24) {
+      this.error = null
+      try {
+        const { data } = await api.get<PagedResult<ItemPromotion>>('/item-promotions', {
+          params: { status: 'Archived' as PromotionStatus, page, pageSize },
+        })
+        this.archived = data.items
+      } catch (err: unknown) {
+        this.error = describeError(err, 'Erro ao carregar promoções arquivadas')
+      }
+    },
+
+    async loadMissingImageCount() {
+      try {
+        const { data } = await api.get<{ count: number }>('/item-promotions/missing-images/count')
+        this.missingImageCount = data.count
+      } catch {
+        // Advisory only; a failure here must not block the admin screen.
+        this.missingImageCount = 0
+      }
+    },
+
+    /**
+     * ==========================
+     * CREATE (multipart/form-data)
      * ==========================
      */
     async addPromotion(payload: PromotionCreatePayload) {
@@ -84,15 +133,13 @@ export const usePromotionsStore = defineStore('promotions', {
       formData.append('dateStart', payload.dateStart)
       formData.append('dateEnd', payload.dateEnd)
 
-      formData.append('isActive', String(payload.isActive))
+      formData.append('publish', String(payload.publish))
       formData.append('categoryId', payload.categoryId.toString())
       formData.append('productType', payload.productType)
 
       try {
         const { data } = await api.post<ItemPromotion>('/item-promotions', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          headers: { 'Content-Type': 'multipart/form-data' },
         })
 
         this.promotions.unshift(data)
@@ -105,17 +152,59 @@ export const usePromotionsStore = defineStore('promotions', {
 
     /**
      * ==========================
-     * DELETE PROMOTION
+     * UPDATE
      * ==========================
      */
-    async removePromotion(id: number) {
+    async updatePromotion(id: number, payload: PromotionUpdatePayload) {
       this.error = null
       try {
-        await api.delete(`/item-promotions/${id}`)
+        const { data } = await api.put<ItemPromotion>(`/item-promotions/${id}`, payload)
+
+        const index = this.promotions.findIndex((p) => p.id === id)
+        if (index >= 0) this.promotions[index] = data
+
+        return true
+      } catch (err: unknown) {
+        this.error = describeError(err, 'Erro ao atualizar promoção')
+        return false
+      }
+    },
+
+    /**
+     * ==========================
+     * ARCHIVE
+     * ==========================
+     * Retires a promotion without destroying it. The old Remove deleted the row
+     * and its image file, so a finished campaign could never be run again.
+     */
+    async archivePromotion(id: number) {
+      this.error = null
+      try {
+        await api.patch<ItemPromotion>(`/item-promotions/${id}/archive`)
+
         this.promotions = this.promotions.filter((p) => p.id !== id)
         return true
       } catch (err: unknown) {
-        this.error = describeError(err, 'Erro ao remover promoção')
+        this.error = describeError(err, 'Erro ao arquivar promoção')
+        return false
+      }
+    },
+
+    /**
+     * ==========================
+     * REACTIVATE
+     * ==========================
+     * Runs an archived promotion again under a new window, reusing its image.
+     */
+    async reactivatePromotion(id: number, payload: ReactivatePayload) {
+      this.error = null
+      try {
+        const { data } = await api.post<ItemPromotion>(`/item-promotions/${id}/reactivate`, payload)
+
+        this.promotions.unshift(data)
+        return true
+      } catch (err: unknown) {
+        this.error = describeError(err, 'Erro ao reativar promoção')
         return false
       }
     },

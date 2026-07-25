@@ -11,6 +11,9 @@ namespace PharmacyWorkerAPI.Data
         public DbSet<Category> Categories { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+        public DbSet<MediaAsset> MediaAssets { get; set; } = null!;
+        public DbSet<PromotionStatusHistory> PromotionStatusHistory { get; set; } = null!;
+        public DbSet<AuditLogEntry> AuditLog { get; set; } = null!;
 
         // Column facets below are not decoration: this model is now the source of
         // truth for the schema. Left unconfigured, EF picks its own defaults —
@@ -37,7 +40,7 @@ namespace PharmacyWorkerAPI.Data
                 entity.Property(e => e.ImagePath).HasColumnName("image_path").HasMaxLength(255);
                 entity.Property(e => e.DateStart).HasColumnName("date_start");
                 entity.Property(e => e.DateEnd).HasColumnName("date_end");
-                entity.Property(e => e.IsActive).HasColumnName("is_active");
+                entity.Property(e => e.Status).HasMaxLength(20);
                 entity.Property(e => e.ProductType).HasColumnName("product_type").HasMaxLength(30);
                 entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id");
                 entity.Property(e => e.CreatedByUserName)
@@ -45,9 +48,9 @@ namespace PharmacyWorkerAPI.Data
                       .HasMaxLength(50);
                 entity.Property(e => e.CreatedAt).HasColumnName("created_at");
 
-                // Covers the storefront's hot query: active promotions whose date
-                // window contains "now", which every page of the home grid runs.
-                entity.HasIndex(e => new { e.IsActive, e.DateStart, e.DateEnd })
+                // Covers the storefront's hot query: publishable promotions whose
+                // date window contains "now", which every page of the grid runs.
+                entity.HasIndex(e => new { e.Status, e.DateStart, e.DateEnd })
                       .HasDatabaseName("ix_item_promotions_window");
 
                 // Restrict, not Cascade: removing a category must not silently
@@ -56,6 +59,67 @@ namespace PharmacyWorkerAPI.Data
                       .WithMany()
                       .HasForeignKey(e => e.CategoryId)
                       .OnDelete(DeleteBehavior.Restrict);
+
+                // Restrict as well: an asset referenced by any promotion, archived
+                // or live, must not be deletable out from under it.
+                entity.HasOne(e => e.MediaAsset)
+                      .WithMany()
+                      .HasForeignKey(e => e.MediaAssetId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Self-reference for the reactivation chain. Deleting the original
+                // must not cascade through every campaign that repeated it.
+                entity.HasOne(e => e.SourcePromotion)
+                      .WithMany()
+                      .HasForeignKey(e => e.SourcePromotionId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<MediaAsset>(entity =>
+            {
+                entity.ToTable("media_assets");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.FilePath).HasMaxLength(255);
+                entity.Property(e => e.ContentHash).HasMaxLength(64).IsFixedLength();
+                entity.Property(e => e.MimeType).HasMaxLength(50);
+                entity.Property(e => e.OriginalFileName).HasMaxLength(255);
+
+                // Uploading the same file twice reuses this row instead of writing
+                // a second copy to disk.
+                entity.HasIndex(e => e.ContentHash).IsUnique();
+            });
+
+            modelBuilder.Entity<PromotionStatusHistory>(entity =>
+            {
+                entity.ToTable("promotion_status_history");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.FromStatus).HasMaxLength(20);
+                entity.Property(e => e.ToStatus).HasMaxLength(20);
+                entity.Property(e => e.Reason).HasMaxLength(200);
+
+                entity.HasIndex(e => new { e.PromotionId, e.ChangedAt })
+                      .HasDatabaseName("ix_promotion_status_history_promotion");
+
+                entity.HasOne(e => e.Promotion)
+                      .WithMany()
+                      .HasForeignKey(e => e.PromotionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AuditLogEntry>(entity =>
+            {
+                entity.ToTable("audit_log");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Action).HasMaxLength(50);
+                entity.Property(e => e.EntityType).HasMaxLength(50);
+                entity.Property(e => e.UserName).HasMaxLength(50);
+
+                entity.HasIndex(e => e.OccurredAt).HasDatabaseName("ix_audit_log_occurred");
+                entity.HasIndex(e => new { e.EntityType, e.EntityId })
+                      .HasDatabaseName("ix_audit_log_entity");
             });
 
             modelBuilder.Entity<Category>(entity =>

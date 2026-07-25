@@ -83,37 +83,126 @@
         </div>
       </div>
 
+      <!-- MISSING IMAGES -->
+      <div v-if="missingImageCount > 0" class="alert alert-warning">
+        <strong>{{ missingImageCount }}</strong> promoção(ões) apontam para uma imagem que não está
+        mais no disco. Reative-as com uma nova imagem para corrigir.
+      </div>
+
       <!-- LIST -->
-      <div class="card">
+      <div class="card mb-4">
         <div class="card-body">
           <h5 class="mb-3">Promoções Cadastradas</h5>
 
-          <table class="table table-striped">
+          <table class="table table-striped align-middle">
             <thead>
               <tr>
                 <th>Nome</th>
                 <th>Preço</th>
+                <th>Vigência</th>
                 <th>Status</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="p in promotions" :key="p.id">
-                <td>{{ p.name }}</td>
-                <td>R$ {{ p.price.toFixed(2) }}</td>
                 <td>
-                  <span class="badge" :class="p.isActive ? 'bg-success' : 'bg-secondary'">
-                    {{ p.isActive ? 'Ativa' : 'Inativa' }}
+                  {{ p.name }}
+                  <span v-if="p.imageMissing" class="badge bg-warning text-dark ms-1">
+                    sem imagem
+                  </span>
+                  <span v-if="p.sourcePromotionId" class="badge bg-light text-dark ms-1">
+                    reativada de #{{ p.sourcePromotionId }}
+                  </span>
+                </td>
+                <td>R$ {{ p.price.toFixed(2) }}</td>
+                <td>{{ formatDate(p.dateStart) }} — {{ formatDate(p.dateEnd) }}</td>
+                <td>
+                  <span class="badge" :class="STATUS_BADGE_CLASS[p.status]">
+                    {{ STATUS_LABELS[p.status] }}
                   </span>
                 </td>
                 <td class="text-end">
-                  <button class="btn btn-sm btn-danger" @click="removePromotion(p.id)">
-                    Remover
+                  <!-- Archive, not delete: the row and its image survive so the
+                       promotion can be run again later. -->
+                  <button class="btn btn-sm btn-outline-secondary" @click="archive(p.id)">
+                    Arquivar
                   </button>
                 </td>
               </tr>
+              <tr v-if="promotions.length === 0">
+                <td colspan="5" class="text-muted text-center">Nenhuma promoção cadastrada</td>
+              </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- ARCHIVED LIBRARY -->
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Arquivadas</h5>
+            <button class="btn btn-sm btn-outline-primary" @click="loadArchived">Atualizar</button>
+          </div>
+
+          <p class="text-muted small">
+            Promoções encerradas mantêm a imagem. Reativar cria uma nova promoção com a mesma arte e
+            uma nova vigência, sem precisar subir a imagem de novo.
+          </p>
+
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Nome</th>
+                <th>Preço</th>
+                <th>Arquivada em</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="p in archived" :key="p.id">
+                <td style="width: 64px">
+                  <img
+                    v-if="!p.imageMissing"
+                    :src="p.imageUrl"
+                    :alt="p.name"
+                    class="img-thumbnail"
+                    style="max-height: 48px"
+                  />
+                  <span v-else class="badge bg-warning text-dark">sem imagem</span>
+                </td>
+                <td>{{ p.name }}</td>
+                <td>R$ {{ p.price.toFixed(2) }}</td>
+                <td>{{ p.archivedAt ? formatDate(p.archivedAt) : '—' }}</td>
+                <td class="text-end">
+                  <button
+                    class="btn btn-sm btn-success"
+                    :disabled="!reactivateDates.start || !reactivateDates.end"
+                    @click="reactivate(p.id)"
+                  >
+                    Reativar
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="archived.length === 0">
+                <td colspan="5" class="text-muted text-center">Nenhuma promoção arquivada</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label small">Nova data inicial</label>
+              <input type="date" class="form-control" v-model="reactivateDates.start" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Nova data final</label>
+              <input type="date" class="form-control" v-model="reactivateDates.end" />
+            </div>
+            <div class="col-md-4 text-muted small">Informe a vigência antes de reativar.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -127,6 +216,7 @@ import { usePromotionsStore } from '@/stores/promotions'
 import type { PromotionCreatePayload } from '@/stores/promotions'
 import { useAuthStore } from '@/stores/auth'
 import { getCategories } from '@/services/itemPromotionService'
+import { STATUS_BADGE_CLASS, STATUS_LABELS } from '@/types/itemPromotion'
 
 /* ======================
    ROUTER / STORE
@@ -162,7 +252,18 @@ const imagePreview = ref<string | undefined>(undefined)
    DATA
 ====================== */
 const promotions = computed(() => promotionsStore.promotions)
+const archived = computed(() => promotionsStore.archived)
+const missingImageCount = computed(() => promotionsStore.missingImageCount)
 const requestError = computed(() => promotionsStore.error)
+
+/* ======================
+   REACTIVATION
+====================== */
+const reactivateDates = ref({ start: '', end: '' })
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleDateString('pt-BR')
+}
 
 /* ======================
    IMAGE
@@ -218,7 +319,7 @@ async function addPromotion() {
     image: imageFile.value!,
     dateStart: dateStart.value,
     dateEnd: dateEnd.value,
-    isActive: isActive.value,
+    publish: isActive.value,
     categoryId: categoryId.value!,
     productType: 'default',
   }
@@ -231,8 +332,30 @@ async function addPromotion() {
   }
 }
 
-async function removePromotion(id: number) {
-  await promotionsStore.removePromotion(id)
+async function archive(id: number) {
+  if (await promotionsStore.archivePromotion(id)) {
+    await promotionsStore.loadArchived()
+  }
+}
+
+async function loadArchived() {
+  await promotionsStore.loadArchived()
+}
+
+async function reactivate(id: number) {
+  const { start, end } = reactivateDates.value
+  if (!start || !end) return
+
+  const created = await promotionsStore.reactivatePromotion(id, {
+    dateStart: new Date(start).toISOString(),
+    dateEnd: new Date(end).toISOString(),
+    publish: true,
+  })
+
+  if (created) {
+    reactivateDates.value = { start: '', end: '' }
+    await promotionsStore.loadArchived()
+  }
 }
 
 /* ======================
@@ -265,6 +388,8 @@ async function logout() {
 ====================== */
 onMounted(async () => {
   promotionsStore.loadPromotions()
+  promotionsStore.loadArchived()
+  promotionsStore.loadMissingImageCount()
 
   try {
     categories.value = await getCategories()

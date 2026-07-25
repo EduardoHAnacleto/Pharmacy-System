@@ -20,15 +20,19 @@ function promotion(id: number, name: string, price: number, priceBefore: number)
     price,
     priceBefore,
     // A 1x1 transparent GIF, so no real image files are needed.
-    imageUrl:
-      'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+    imageUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
     dateStart: '2026-01-01T00:00:00Z',
     dateEnd: '2099-12-31T00:00:00Z',
-    isActive: true,
+    status: 'Active',
+    archivedAt: null,
+    imageMissing: false,
+    sourcePromotionId: null,
     categoryId: 1,
     productType: 'default',
     createdByUserId: 1,
     createdByUserName: 'admin',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: null,
   }
 }
 
@@ -64,7 +68,10 @@ test.describe('storefront', () => {
     await page.goto('/')
 
     await page.getByText('Dipirona 500mg').waitFor()
-    await page.getByRole('button', { name: /adicionar/i }).first().click()
+    await page
+      .getByRole('button', { name: /adicionar/i })
+      .first()
+      .click()
 
     await page.goto('/cart')
 
@@ -77,7 +84,10 @@ test.describe('storefront', () => {
     await page.goto('/')
 
     await page.getByText('Dipirona 500mg').waitFor()
-    await page.getByRole('button', { name: /adicionar/i }).first().click()
+    await page
+      .getByRole('button', { name: /adicionar/i })
+      .first()
+      .click()
 
     await page.reload()
     await page.goto('/cart')

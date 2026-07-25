@@ -15,7 +15,7 @@ public class ItemPromotionMappingTests
         ImagePath = "/images/promotions/abc.webp",
         DateStart = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
         DateEnd = new DateTime(2026, 1, 31, 0, 0, 0, DateTimeKind.Utc),
-        IsActive = true,
+        Status = PromotionStatus.Active,
         CategoryId = 3,
         ProductType = "default",
         CreatedByUserId = 1,
@@ -36,7 +36,7 @@ public class ItemPromotionMappingTests
         Assert.Equal(promotion.PriceBefore, dto.PriceBefore);
         Assert.Equal(promotion.DateStart, dto.DateStart);
         Assert.Equal(promotion.DateEnd, dto.DateEnd);
-        Assert.Equal(promotion.IsActive, dto.IsActive);
+        Assert.Equal(promotion.Status, dto.Status);
         Assert.Equal(promotion.CategoryId, dto.CategoryId);
         Assert.Equal(promotion.ProductType, dto.ProductType);
         Assert.Equal(promotion.CreatedByUserId, dto.CreatedByUserId);

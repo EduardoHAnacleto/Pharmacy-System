@@ -91,7 +91,12 @@ builder.Services.AddScoped<AuthService>();
 
 // Domain
 builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<IMediaAssetService, MediaAssetService>();
+builder.Services.AddScoped<IAuditLogger, AuditLogger>();
 builder.Services.AddSingleton<IPromotionImageStorage, PromotionImageStorage>();
+
+// Records status transitions and reconciles missing image files.
+builder.Services.AddHostedService<PromotionMaintenanceService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -118,6 +123,10 @@ builder.Services.AddAuthorization();
 
 // Rate limiting. Brute-forcing the login is now bounded server-side; the old
 // limit lived in the browser's localStorage and could be cleared at will.
+var rateLimitOptions =
+    builder.Configuration.GetSection(RateLimitOptions.SectionName).Get<RateLimitOptions>()
+    ?? new RateLimitOptions();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -127,8 +136,8 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 5,
-                Window = TimeSpan.FromMinutes(5),
+                PermitLimit = rateLimitOptions.LoginPermitLimit,
+                Window = TimeSpan.FromSeconds(rateLimitOptions.LoginWindowSeconds),
                 QueueLimit = 0,
             }));
 });
@@ -235,6 +244,10 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 });
 
 await DatabaseSeeder.SeedAsync(app.Services);
+
+// Links promotions created before the media library existed to an asset, which
+// requires hashing files on disk and so cannot be a SQL migration.
+await MediaBackfillService.RunAsync(app.Services);
 
 app.Run();
 
