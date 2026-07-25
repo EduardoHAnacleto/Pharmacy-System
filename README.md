@@ -1,167 +1,246 @@
-# 💊 Pharmacy System
+# Storefront — vitrine de promoções com pedido por WhatsApp
 
 <div align="center">
 
-![.NET](https://img.shields.io/badge/.NET-8-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
+![.NET](https://img.shields.io/badge/.NET-9-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
 ![Vue.js](https://img.shields.io/badge/Vue.js-3-42B883?style=for-the-badge&logo=vue.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![REST API](https://img.shields.io/badge/REST%20API-009688?style=for-the-badge)
-![Production](https://img.shields.io/badge/Production-Active-success?style=for-the-badge)
 
 </div>
 
----
+Vitrine on-line configurável para lojas que querem mostrar produtos em promoção e
+receber o pedido pelo WhatsApp — sem pagamento on-line e **sem guardar nenhum dado
+pessoal do cliente no servidor**.
 
-# Overview
+Roda em produção numa farmácia no Brasil. Nada no código é específico dessa
+farmácia: nome, cores, logotipo, endereço, contato, moeda, idioma, taxa de entrega,
+cidades atendidas, horário de funcionamento e quais campos pedir no checkout são
+dados, editáveis numa tela de administração.
 
-Pharmacy System is a Full-Stack Pharmacy Management System developed to support the daily operations of a real pharmacy.
-
-The application provides an integrated platform for managing products, inventory, customers and sales while demonstrating modern Full-Stack development practices, RESTful APIs, containerised deployment and maintainable software architecture.
-
-The system is currently deployed in a production environment and actively used in day-to-day business operations. (Send me a message if you'd like to check it out)
-
----
-
-# Features
-
-- 🔐 User Authentication
-- 💊 Product Management
-- 📦 Inventory Management
-- 👥 Customer Management
-- 💰 Sales Management
-- 📊 Dashboard
-- 🔍 Product Search
-- 📱 Responsive Interface
-- 🔄 RESTful API
-- 🐳 Docker Deployment
+> **Escopo, por decisão do dono do projeto:** não há pagamento on-line e não há
+> armazenamento de dados sensíveis de clientes. Essas duas restrições moldaram a
+> arquitetura e não são omissões.
 
 ---
 
-# Architecture
+## O que o sistema faz
+
+**Vitrine (público, sem login)**
+
+- Grade de promoções com scroll infinito, atualizada em tempo real via SignalR
+- Busca por nome, filtro por categoria e faixa de preço, cinco ordenações
+- Carrinho no navegador, com retirada ou entrega conforme as regras da loja
+- Checkout que monta a mensagem de WhatsApp com o pedido
+- Página de contato com mapa, horário e o estado "aberto/fechado agora" calculado
+  no fuso da loja, considerando feriados do país da loja
+- Dados estruturados schema.org `Product`/`Offer`, `robots.txt`, `sitemap.xml`,
+  manifest PWA
+- Português (pt-BR) e inglês (en-NZ), com moeda e datas formatadas pelo locale da loja
+
+**Administração (JWT, papel Admin)**
+
+- Criar, editar, arquivar, reativar e duplicar promoções
+- Biblioteca de arquivadas: reativar reaproveita a imagem, sem novo upload
+- CRUD de categorias
+- Configurações da loja: identidade, marca, localização, contato, comercial,
+  checkout e horários
+- Insights: funil de conversão, desempenho por promoção, resumo de vendas,
+  alertas operacionais
+- Exportação CSV para análise fora do sistema
+- Trilha de auditoria de toda ação administrativa
+
+**O que o sistema deliberadamente não faz**
+
+Pagamento on-line; cadastro de clientes; controle de estoque; PDV; nota fiscal.
+
+---
+
+## Privacidade por construção
+
+O ponto que mais influenciou o desenho:
+
+| Dado | Onde fica |
+|---|---|
+| Nome, telefone, CPF, CEP, endereço | **Somente no navegador do visitante** (`localStorage`) e na mensagem de WhatsApp |
+| Itens, quantidades, valores, tipo de entrega, cidade | Banco de dados (`orders`, `order_items`) |
+| Eventos de uso | Banco (`analytics_events`), com chave de sessão aleatória de `sessionStorage`, sem IP, sem user-agent, sem cookie |
+
+Não é uma promessa em prosa: `CreateOrderDto` não tem campo para dado pessoal, as
+tabelas não têm coluna para isso, e `NoPersonalDataTests` falha o build se alguém
+adicionar uma — a asserção roda contra o modelo EF mapeado, não contra o texto do
+código. Os eventos brutos são agregados em `analytics_daily` e apagados após a
+retenção.
+
+A página `/privacy` explica isso ao visitante da loja.
+
+---
+
+## Arquitetura
 
 ```
-                Vue.js Frontend
-                       │
-                       │ REST API
-                       ▼
-              ASP.NET Core Backend
-                       │
-                       ▼
-                SQL Server Database
+                    Navegador
+                        │
+                        ▼
+              nginx  (frontend)
+        /  ·  /api/  ·  /images/  ·  /promotionsHub
+                        │
+                        ▼
+              ASP.NET Core 9  (backend)
+              Controllers → Services → EF Core
+                    │              │
+                    ▼              ▼
+              MySQL 8          Redis 7
+            (migrations)   (cache versionado)
 ```
 
-The frontend communicates with the backend through REST APIs, while the backend manages business logic, authentication and database interactions.
+O nginx serve o SPA e é o único host público: o frontend chama `/api/v1` relativo,
+então não há URL de backend embutida no bundle. Migrations são aplicadas por um
+serviço `migrator` separado, que roda até o fim antes de o backend subir — DDL não
+fica acoplado ao boot da API.
+
+Decisões e seus motivos estão em [`docs/adr/`](docs/adr/).
 
 ---
 
-# Technology Stack
+## Stack
 
-## Frontend
-
-- Vue.js 3
-- TypeScript
-- HTML5
-- CSS3
-
-## Backend
-
-- ASP.NET Core
-- C#
-- Entity Framework
-
-## Database
-
-- SQL Server
-
-## DevOps
-
-- Docker
-- Docker Compose
-- Git
+| Camada | Tecnologia |
+|---|---|
+| Frontend | Vue 3, TypeScript, Vite 7, Pinia, vue-router, vue-i18n, Bootstrap 5 |
+| Backend | ASP.NET Core 9, EF Core 9 (Pomelo MySQL), SignalR, Serilog, OpenTelemetry |
+| Dados | MySQL 8, Redis 7 |
+| Auth | JWT + refresh token rotativo em cookie HttpOnly, PBKDF2-HMAC-SHA256 (600 000 iterações) |
+| Testes | xUnit + Testcontainers (MySQL e Redis reais), Vitest, Playwright |
+| Infra | Docker Compose, nginx, GitHub Actions, GHCR, Trivy |
 
 ---
 
-# Production Environment
+## Rodando localmente
 
-This application is currently deployed and used by a real pharmacy.
-
-For privacy and security reasons, the production environment is not publicly accessible.
-
----
-
-# Running Locally
-
-Clone the repository:
+Precisa de Docker e Docker Compose.
 
 ```bash
 git clone https://github.com/EduardoHAnacleto/Pharmacy-System.git
+cd Pharmacy-System
+
+cp .env.example .env
+# Preencha .env. Obrigatórios: MYSQL_*, REDIS_PASSWORD, JWT_SIGNING_KEY
+# (mínimo 32 caracteres — a API se recusa a subir com menos) e ADMIN_SEED_*.
+#   openssl rand -base64 48
+
+docker compose up --build -d
 ```
 
-Start the application:
+- Vitrine: <http://localhost>
+- Administração: <http://localhost/login>
+- Health: <http://localhost:5000/health> e `/health/ready`
+
+Sem Docker, para desenvolvimento:
 
 ```bash
-docker compose up --build
+# Backend — precisa de MySQL e Redis acessíveis
+cd backend
+dotnet ef database update
+dotnet run
+
+# Frontend, noutro terminal
+cd frontend
+npm ci
+npm run dev            # http://localhost:5173, proxy para o backend
 ```
 
-After the containers are running, the application will be available locally.
+Detalhes de deploy, variáveis, ordem de subida, backup e rotação de credenciais
+estão em [`docs/OPERACOES.md`](docs/OPERACOES.md).
 
 ---
 
-# Project Structure
+## Testes
+
+```bash
+# Backend — Testcontainers sobe MySQL e Redis de verdade
+cd backend && dotnet test
+
+# Frontend
+cd frontend
+npm run type-check
+npm run lint
+npm run test:unit
+npm run test:e2e
+```
+
+Os testes de integração **pulam** (não passam em falso) quando não há Docker
+disponível. A verificação real é o CI, que tem daemon.
+
+---
+
+## Estrutura
 
 ```
 Pharmacy-System
-│
-├── Backend
-├── Frontend
-├── Database
-├── Docker
-└── Documentation
+├── backend/                 ASP.NET Core 9
+│   ├── Controllers/         HTTP
+│   ├── Services/            regras de negócio
+│   ├── Data/                AppDbContext
+│   ├── Migrations/          dono do schema
+│   ├── DTOs/  Models/  Mapping/  Hubs/  Options/  Infrastructure/
+│   └── Dockerfile           build, migrations-build, migrator, api
+├── frontend/                Vue 3 + Vite
+│   └── src/                 views, components, stores, services, i18n, utils
+├── tests/                   xUnit (fora de backend/: o SDK web engloba **/*.cs)
+├── database/upgrades/       baseline para bases criadas antes das migrations
+├── docs/                    plano, runbook, ADRs, modelo de dados
+├── scripts/backup.sh
+└── docker-compose.yml       db, redis, migrator, backend, frontend
 ```
 
 ---
 
-# Future Improvements
+## CI/CD
 
-- Unit Tests
-- Integration Tests
-- CI/CD Pipeline
-- Cloud Deployment
-- Reporting Module
-- Audit Logging
-- Performance Improvements
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) em todo push e PR:
 
----
+- **Backend** — build Release com `TreatWarningsAsErrors`, `dotnet format --verify-no-changes`,
+  `dotnet ef migrations has-pending-model-changes` (falha se o modelo divergir das
+  migrations) e `dotnet test`
+- **Frontend** — `type-check`, `eslint`, `prettier --check`, `vitest`, `build`
+- **E2E** — Playwright em chromium
+- **Compose** — valida as duas stacks contra `.env.example`
 
-# Business Impact
-
-This system was developed to support the operational needs of a real pharmacy and is currently used in production.
-
-The project demonstrates the ability to design, develop, deploy and maintain software that supports real business processes, rather than serving solely as a portfolio or academic exercise.
+[`docker.yml`](.github/workflows/docker.yml) publica `pharmacy-backend`,
+`pharmacy-migrator` e `pharmacy-frontend` no GHCR e roda Trivy.
 
 ---
 
-# About
+## Estado e roadmap
 
-Developed by **Eduardo Hipolito Anacleto**
+O plano completo, com os bugs encontrados e o que vem depois, está em
+[`docs/PLANO_DE_MELHORIAS.md`](docs/PLANO_DE_MELHORIAS.md).
 
-Full-Stack Software Developer
+Limitações conhecidas, explicitamente:
 
-🇳🇿 Auckland, New Zealand
+- **Preview de link (Open Graph) é estático.** O crawler do WhatsApp não executa
+  JavaScript, então um título vindo de `store_settings` depois do mount nunca é
+  lido. Preview por promoção exige renderizar a página no servidor.
+- **Uma stack por loja.** Multi-tenant real (`tenant_id` + resolução por
+  subdomínio) só se paga com clientes suficientes; ver
+  [ADR 0005](docs/adr/0005-white-label-antes-de-multi-tenant.md).
+- **`ItemPromotion` é produto e promoção ao mesmo tempo.** Separar em `Product` +
+  `Offer` é migração de dados, planejada e ainda não feita.
+- **Busca usa `LIKE '%termo%'`**, que não usa índice. Correto neste tamanho;
+  revisitar com dezenas de milhares de linhas.
 
-- Master of Information Technology
-- Bachelor of Information Systems
+---
 
-Currently seeking Software Development opportunities throughout New Zealand.
+## Sobre
 
-## Contact
+Desenvolvido por **Eduardo Hipolito Anacleto** — Full-Stack Software Developer,
+Auckland, Nova Zelândia.
 
-📧 eduardohanacleto@gmail.com
+- 📧 eduardohanacleto@gmail.com
+- 💼 <https://linkedin.com/in/eduardohipolitoanacleto>
+- 🐙 <https://github.com/EduardoHAnacleto>
 
-💼 LinkedIn  
-https://linkedin.com/in/eduardohipolitoanacleto
-
-🐙 GitHub  
-https://github.com/EduardoHAnacleto
+Licença: [MIT](LICENSE).

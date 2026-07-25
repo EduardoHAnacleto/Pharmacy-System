@@ -54,7 +54,7 @@ namespace PharmacyWorkerAPI.Services
             return (new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
         }
 
-        public (string RawToken, RefreshToken record) CreateRefreshToken(int userId)
+        public (string RawToken, RefreshToken Record) CreateRefreshToken(int userId)
         {
             // URL-safe so the value survives being carried in a cookie.
             var rawToken = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(RefreshTokenBytes));

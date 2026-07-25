@@ -9,9 +9,9 @@ namespace PharmacyWorkerAPI.Services
 
         /// <summary>
         /// Creates a refresh token. The raw value is returned to the caller once and
-        /// never persisted; only <paramref name="record"/>'s hash reaches the database.
+        /// never persisted; only the returned record's hash reaches the database.
         /// </summary>
-        (string RawToken, RefreshToken record) CreateRefreshToken(int userId);
+        (string RawToken, RefreshToken Record) CreateRefreshToken(int userId);
 
         /// <summary>Hashes a raw refresh token for lookup or comparison.</summary>
         string HashRefreshToken(string rawToken);

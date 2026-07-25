@@ -24,6 +24,27 @@ estiver vazia. Depois disso o valor é ignorado — mudar a senha aqui não muda
 senha da conta. Se as duas variáveis ficarem em branco, nenhuma conta é criada:
 o sistema prefere ficar sem login utilizável a ter um login padrão conhecido.
 
+### Opcionais
+
+Todas têm default e nenhuma impede a aplicação de subir.
+
+| Variável | Para quê |
+|---|---|
+| `Store__Name`, `Store__Currency`, `Store__Locale`, `Store__CountryCode`, `Store__TimeZone`, `Store__WhatsAppNumber`, `Store__LogoUrl` | Valores iniciais da linha de `store_settings`, gravados **uma única vez**, na primeira subida com a tabela vazia. Serve para um deploy novo já chegar apresentável; depois disso a fonte de verdade é a tela `/admin/settings` |
+| `OpenTelemetry__OtlpEndpoint` | Endereço do coletor OTLP, ex. `http://otel-collector:4317`. Sem ele a instrumentação roda e nada é exportado — não há caminho de código separado para um deploy sem coletor |
+| `OpenTelemetry__ServiceName` | Nome do serviço nos traces. Default `storefront-api`; vale distinguir quando houver mais de uma loja no mesmo coletor |
+| `RateLimit__LoginPermitLimit`, `RateLimit__LoginWindowMinutes` | Ajuste do limite de tentativas de login por IP |
+
+> O separador `__` (dois sublinhados) é como o .NET mapeia variável de ambiente
+> para configuração aninhada: `Store__Name` é `Store:Name`.
+
+### Configuração que **não** é variável de ambiente
+
+Nome da loja, cores, logotipo, endereço, contato, moeda, idioma, taxa de entrega,
+cidades atendidas, horário de funcionamento e quais campos pedir no checkout ficam
+em `store_settings` e são editados em `/admin/settings`. É proposital: a lojista
+precisa poder mudar o próprio telefone sem redeploy.
+
 ---
 
 ## 2. Subir a aplicação
@@ -181,13 +202,16 @@ repositório. Em *Settings → Branches → Add rule* para `main`:
 - Require status checks to pass: `Backend`, `Frontend`, `Compose`
 - Require branches to be up to date before merging
 
-### Observação sobre `VITE_WHATSAPP_NUMBER`
+### `VITE_WHATSAPP_NUMBER` não é mais usado
 
 O Vite embute variáveis `VITE_*` no bundle em tempo de build, então o número do
-WhatsApp fica assado na imagem. O `docker.yml` lê a variável de repositório
-`VITE_WHATSAPP_NUMBER` se ela existir; sem ela, o bundle usa o valor padrão do
-código. Isso é uma limitação de configuração em build-time, e a Fase 6 resolve
-movendo o número para `store_settings`, servido em runtime.
+WhatsApp ficava assado na imagem. **Isso foi resolvido:** o número vem de
+`store_settings` em runtime, e a variável não é lida por código nenhum. Ela
+continua no `.env.example` apenas para não quebrar deploys existentes que a
+definam; pode ser removida.
+
+O mesmo vale para o `logoUrl`: a arte da farmácia está em `frontend/public/logoFarma.png`
+e é referenciada pela configuração, não importada pelo bundle.
 
 ---
 

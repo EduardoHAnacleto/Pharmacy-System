@@ -2,8 +2,14 @@
 
 > Branch de trabalho: `claude/project-improvement-plan-d9iacl`
 >
-> **Estado:** Fases 0, 1 e 2 implementadas. Fases 3 a 8 pendentes.
-> Procedimentos operacionais em [`OPERACOES.md`](OPERACOES.md).
+> **Estado:** Fases 0 a 8 implementadas. O plano está completo.
+>
+> Procedimentos operacionais em [`OPERACOES.md`](OPERACOES.md); decisões e seus
+> motivos em [`adr/`](adr/); schema em [`MODELO_DE_DADOS.md`](MODELO_DE_DADOS.md);
+> histórico do que mudou em [`../CHANGELOG.md`](../CHANGELOG.md).
+>
+> **Pendências que dependem do dono do projeto**, não de código, estão na
+> [§7](#7-decisões-pendentes) e na [§9](#9-o-que-ficou-fora).
 
 ---
 
@@ -107,12 +113,12 @@ Nove fases. **Fases 0–2 são pré-requisito de tudo**: não faz sentido constr
 | [0](#fase-0--higiene-do-repositório-e-bugs-críticos) ✅ | Higiene do repo + bugs críticos | P | Repo limpo, deploy funcional em Linux, imagens que sobrevivem |
 | [1](#fase-1--autenticação-real) ✅ | Autenticação real | M | JWT, `[Authorize]` nas escritas, senha fora do bundle |
 | [2](#fase-2--configuração-migrations-e-cicd) ✅ | Config, migrations e CI/CD | M | EF Migrations, `.env.example`, GitHub Actions, health checks |
-| [3](#fase-3--arquitetura-e-testes) | Arquitetura e testes | M–G | Camada de serviço, validação, Serilog, suíte de testes |
-| [4](#fase-4--modelo-de-dados-mídia-histórico-e-reativação) | **Mídia, histórico e reativação** | G | Biblioteca de anúncios, arquivar em vez de deletar, reativar promoção |
-| [5](#fase-5--analytics-pedidos-anônimos-e-exportação) | **Analytics, pedidos e exportação** | G | Funil, dashboard, pedidos anônimos, export CSV |
-| [6](#fase-6--white-label-qualquer-loja-on-line) | White-label (qualquer loja) | G | `StoreSettings` + catálogo genérico + i18n |
-| [7](#fase-7--operacional-do-admin-seo-e-acessibilidade) | Operacional do admin, SEO, A11y | M | Editar promoção, categorias, busca, Open Graph |
-| [8](#fase-8--documentação-e-observabilidade) | Docs e observabilidade | P–M | README honesto, ADRs, OpenTelemetry |
+| [3](#fase-3--arquitetura-e-testes) ✅ | Arquitetura e testes | M–G | Camada de serviço, validação, Serilog, suíte de testes |
+| [4](#fase-4--modelo-de-dados-mídia-histórico-e-reativação) ✅ | **Mídia, histórico e reativação** | G | Biblioteca de anúncios, arquivar em vez de deletar, reativar promoção |
+| [5](#fase-5--analytics-pedidos-anônimos-e-exportação) ✅ | **Analytics, pedidos e exportação** | G | Funil, dashboard, pedidos anônimos, export CSV |
+| [6](#fase-6--white-label-qualquer-loja-on-line) ✅ | White-label (qualquer loja) | G | `StoreSettings` + catálogo genérico + i18n |
+| [7](#fase-7--operacional-do-admin-seo-e-acessibilidade) ✅ | Operacional do admin, SEO, A11y | M | Editar promoção, categorias, busca, Open Graph |
+| [8](#fase-8--documentação-e-observabilidade) ✅ | Docs e observabilidade | P–M | README honesto, ADRs, OpenTelemetry |
 
 As Fases 4 e 5 são o núcleo dos objetivos 5–7 e vêm **antes** do white-label (Fase 6) de propósito: ambas mexem no mesmo schema, e migrar o modelo de dados duas vezes seria desperdício.
 
@@ -654,11 +660,40 @@ Lighthouse ≥ 90 em Performance, SEO e Accessibility. Colar a URL no WhatsApp e
 
 ## 7. Decisões pendentes
 
-1. **Correlação de sessão para o funil** (§5.1): id efêmero em `sessionStorage`, descartado no rollup — recomendado — ou apenas contadores por evento, sem taxa de conversão?
-2. **`orders.delivery_city`**: manter a cidade (útil para análise de cobertura, não identifica ninguém) ou omitir?
-3. **Expurgar `.env` do histórico** do git (`git filter-repo`), ou só remover do HEAD e rotacionar as senhas?
-4. **Renomear o projeto/repositório** para nome neutro agora, ou manter `Pharmacy-System` e generalizar só o código?
-5. **Retenção do bruto de `analytics_events`**: 90 dias é um default razoável — confirmar.
+Duas foram implementadas na recomendação, e continuam reversíveis; três dependem de
+você e não de código.
+
+| # | Decisão | Estado |
+|---|---|---|
+| 1 | **Correlação de sessão para o funil** (§5.1) | **Implementada como recomendado:** chave aleatória em `sessionStorage`, morre com a aba, descartada no rollup. Sem ela existem contadores, mas não taxa de conversão |
+| 2 | **`orders.delivery_city`** | **Implementada mantendo a cidade.** Útil para análise de cobertura e não identifica ninguém. Remover é uma migration de uma coluna |
+| 3 | **Expurgar `.env` do histórico** do git (`git filter-repo`) | **Sua decisão.** Removido do HEAD; o histórico ainda contém as senhas antigas. Independente disso, **as credenciais precisam ser rotacionadas** |
+| 4 | **Renomear o projeto** (`PharmacyWorkerAPI` → algo neutro) | **Sua decisão.** Puramente mecânico, e toca todos os namespaces: merece um PR isolado, revisável por diff de rename |
+| 5 | **Retenção do bruto de `analytics_events`** | **90 dias** como default configurável. Confirmar ou ajustar |
+
+### Ações do seu lado, antes de subir em produção
+
+1. **Rotacionar** `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD` e `REDIS_PASSWORD` — estiveram versionados.
+2. Definir `JWT_SIGNING_KEY` (32+ caracteres; `openssl rand -base64 48`) e `ADMIN_SEED_USERNAME`/`ADMIN_SEED_PASSWORD`.
+3. Aplicar o baseline de `database/upgrades/` **numa base criada antes das migrations**, uma vez.
+4. Abrir `/admin/settings` e preencher a configuração da loja — inclusive `logoUrl` (`/logoFarma.png` recupera a arte atual, que agora vive em `frontend/public/`).
+5. Configurar branch protection exigindo CI verde (precisa de permissão de admin no repositório).
+
+---
+
+## 9. O que ficou fora
+
+Deliberadamente, com o motivo:
+
+| Item | Por que não |
+|---|---|
+| **Preview Open Graph por promoção** | O crawler do WhatsApp não executa JavaScript, então título e imagem vindos de `store_settings` depois do mount nunca são lidos. As tags estáticas estão no `index.html`; preview dinâmico exige renderizar a página no servidor — mudança de arquitetura, não ajuste |
+| **Separar `Product` de `Offer`** (§6.2) | Migração de dados sobre uma base em produção. Merece um PR próprio, com script testado contra um dump, sem misturar com mudança de comportamento. Enquanto isso, reativar e duplicar mitigam o recadastro |
+| **Multi-tenancy** | [ADR 0005](adr/0005-white-label-antes-de-multi-tenant.md) |
+| **Índice full-text na busca** | `LIKE '%termo%'` não usa índice, e no tamanho de um catálogo de loja isso não custa nada. Um índice full-text no MySQL adiciona dependência de schema por um ganho ainda inexistente |
+| **Conversão de imagem para WebP e thumbnails** | `ImageSharp` resolveria, e é ganho de Lighthouse, não de correção. O `loading="lazy"` já está no lugar |
+| **Prometheus e Grafana no compose** | OpenTelemetry instrumenta e exporta por OTLP quando `OpenTelemetry:OtlpEndpoint` está configurado. Subir o coletor é decisão de operação, não de código |
+| **Resumo semanal por e-mail dos alertas** | Exige credencial de SMTP e uma decisão de para quem enviar. Os alertas já aparecem no dashboard |
 
 ---
 
