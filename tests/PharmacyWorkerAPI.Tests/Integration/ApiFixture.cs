@@ -64,10 +64,21 @@ public class ApiFixture : WebApplicationFactory<Program>, IAsyncLifetime
             return;
         }
 
-        // Create the schema exactly the way production does — by applying migrations.
-        using var scope = Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // Migrations are applied through a standalone context, deliberately not via
+        // Services. Touching Services builds the host, which runs the application's
+        // startup — including the admin seeder — and that would run against a
+        // database with no tables yet. The seeder swallows its own failure, so the
+        // symptom was a later login returning 401 in whichever test happened to run
+        // before some other host seeded the user.
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseMySql(_mysql.GetConnectionString(), ServerVersion.Parse("8.0"))
+            .Options;
+
+        await using var context = new AppDbContext(options);
         await context.Database.MigrateAsync();
+
+        // Now that the schema exists, building the host seeds successfully.
+        _ = Services;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
