@@ -1,5 +1,5 @@
 <template>
-  <Hero />
+  <HeroBanner />
 
   <!-- START LOADING  -->
   <div v-if="loading && promotions.length === 0" class="text-center py-5">
@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 
-import Hero from '@/components/Hero.vue'
+import HeroBanner from '@/components/HeroBanner.vue'
 import ProductGrid from '@/components/ProductGrid.vue'
 import { startSignalR, onPromotionsChanged } from '@/services/signalr'
 import { useInfinitePromotions } from '@/hooks/useInfinitePromotions'

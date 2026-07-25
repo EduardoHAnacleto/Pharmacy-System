@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PharmacyWorkerAPI.Models;
-using System.Collections.Generic;
 
 namespace PharmacyWorkerAPI.Data
 {
@@ -8,10 +7,8 @@ namespace PharmacyWorkerAPI.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        public DbSet<ItemPromotion> ItemPromotions { get; set; }
-        public DbSet<Category> Categories { get; set; }
-
-        public ProductType ProductType { get; set; }
+        public DbSet<ItemPromotion> ItemPromotions { get; set; } = null!;
+        public DbSet<Category> Categories { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

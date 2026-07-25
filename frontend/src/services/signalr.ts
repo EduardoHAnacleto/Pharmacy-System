@@ -1,7 +1,9 @@
 import * as signalR from '@microsoft/signalr'
 
+// Relative URL: served through the same nginx (or dev server) that serves the
+// SPA, which is why nginx.conf forwards /promotionsHub with the Upgrade headers.
 const connection = new signalR.HubConnectionBuilder()
-  .withUrl('http://localhost:5000/promotionsHub', {
+  .withUrl('/promotionsHub', {
     withCredentials: true,
   })
   .withAutomaticReconnect()

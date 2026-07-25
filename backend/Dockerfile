@@ -9,9 +9,6 @@ RUN dotnet restore
 
 COPY . ./
 
-# wwwroot creation for images
-RUN mkdir -p wwwroot/images/promotions
-
 RUN dotnet publish -c Release -o out
 
 # =========================
@@ -20,13 +17,16 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 
+# Mount point for uploaded promotion images. Backed by a named volume in
+# docker-compose.yml so uploads survive container rebuilds.
 RUN mkdir -p wwwroot/images/promotions
 
-ENV ASPNETCORE_URLS=http://+:80 
-EXPOSE 80  
+ENV ASPNETCORE_URLS=http://+:80
+EXPOSE 80
 
 COPY --from=build /app/out .
 
-ENV ASPNETCORE_ENVIRONMENT=Development
+# ASPNETCORE_ENVIRONMENT is intentionally not set here: it defaults to
+# Production. docker-compose.dev.yml overrides it for local development.
 
 ENTRYPOINT ["dotnet", "PharmacyWorkerAPI.dll"]

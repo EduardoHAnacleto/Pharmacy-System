@@ -64,8 +64,12 @@
 
           <button class="btn btn-success mt-2" @click="addPromotion">Salvar Promoção</button>
 
-          <div v-if="error" class="alert alert-danger mt-3">
+          <div v-if="formError" class="alert alert-danger mt-3">
             Preencha todos os campos corretamente.
+          </div>
+
+          <div v-if="requestError" class="alert alert-danger mt-3">
+            {{ requestError }}
           </div>
         </div>
       </div>
@@ -128,7 +132,7 @@ const priceBefore = ref<number | null>(null)
 const dateStart = ref('')
 const dateEnd = ref('')
 const isActive = ref(true)
-const error = ref(false)
+const formError = ref(false)
 
 /* ======================
    IMAGE STATE
@@ -140,6 +144,7 @@ const imagePreview = ref<string | undefined>(undefined)
    DATA
 ====================== */
 const promotions = computed(() => promotionsStore.promotions)
+const requestError = computed(() => promotionsStore.error)
 
 /* ======================
    IMAGE
@@ -180,10 +185,10 @@ const isFormValid = computed(() => {
    ACTIONS
 ====================== */
 async function addPromotion() {
-  error.value = false
+  formError.value = false
 
   if (!isFormValid.value) {
-    error.value = true
+    formError.value = true
     return
   }
 
@@ -201,12 +206,16 @@ async function addPromotion() {
     createdByUserName: 'Admin',
   }
 
-  await promotionsStore.addPromotion(payload)
-  resetForm()
+  // Only clear the form when the promotion actually reached the server,
+  // otherwise a failed save silently discards everything the user typed.
+  const saved = await promotionsStore.addPromotion(payload)
+  if (saved) {
+    resetForm()
+  }
 }
 
-function removePromotion(id: number) {
-  promotionsStore.removePromotion(id)
+async function removePromotion(id: number) {
+  await promotionsStore.removePromotion(id)
 }
 
 /* ======================

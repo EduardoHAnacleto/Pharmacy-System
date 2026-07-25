@@ -1,26 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
-
-/**
- * DTO  (GET)
- */
-export interface Promotion {
-  id: number
-  name: string
-  price: number
-  priceBefore: number
-  imageUrl: string
-
-  dateStart: string
-  dateEnd: string
-
-  isActive: boolean
-  categoryId: number
-  productType: string
-
-  createdByUserId: number
-  createdByUserName: string
-}
+import type { ItemPromotion } from '@/types/itemPromotion'
 
 /**
  * DTO (POST)
@@ -42,14 +22,26 @@ export interface PromotionCreatePayload {
   createdByUserName: string
 }
 
+function describeError(err: unknown, fallback: string): string {
+  if (typeof err === 'object' && err !== null && 'response' in err) {
+    const response = (err as { response?: { data?: unknown } }).response
+    if (typeof response?.data === 'string' && response.data.length > 0) {
+      return response.data
+    }
+  }
+
+  return err instanceof Error ? err.message : fallback
+}
+
 export const usePromotionsStore = defineStore('promotions', {
   state: () => ({
-    promotions: [] as Promotion[],
+    promotions: [] as ItemPromotion[],
     loading: false,
+    error: null as string | null,
   }),
 
   getters: {
-    activePromotions(state): Promotion[] {
+    activePromotions(state): ItemPromotion[] {
       return state.promotions.filter((p) => p.isActive)
     },
   },
@@ -62,9 +54,12 @@ export const usePromotionsStore = defineStore('promotions', {
      */
     async loadPromotions() {
       this.loading = true
+      this.error = null
       try {
-        const { data } = await api.get<Promotion[]>('/item-promotions/all')
+        const { data } = await api.get<ItemPromotion[]>('/item-promotions/all')
         this.promotions = data
+      } catch (err: unknown) {
+        this.error = describeError(err, 'Erro ao carregar promoções')
       } finally {
         this.loading = false
       }
@@ -77,6 +72,8 @@ export const usePromotionsStore = defineStore('promotions', {
      * ==========================
      */
     async addPromotion(payload: PromotionCreatePayload) {
+      this.error = null
+
       const formData = new FormData()
 
       formData.append('name', payload.name)
@@ -94,13 +91,19 @@ export const usePromotionsStore = defineStore('promotions', {
       formData.append('createdByUserId', payload.createdByUserId.toString())
       formData.append('createdByUserName', payload.createdByUserName)
 
-      const { data } = await api.post<Promotion>('/item-promotions', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      try {
+        const { data } = await api.post<ItemPromotion>('/item-promotions', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        })
 
-      this.promotions.unshift(data)
+        this.promotions.unshift(data)
+        return true
+      } catch (err: unknown) {
+        this.error = describeError(err, 'Erro ao salvar promoção')
+        return false
+      }
     },
 
     /**
@@ -109,26 +112,15 @@ export const usePromotionsStore = defineStore('promotions', {
      * ==========================
      */
     async removePromotion(id: number) {
-      await api.delete(`/item-promotions/${id}`)
-      this.promotions = this.promotions.filter((p) => p.id !== id)
-    },
-
-    /**
-     * ==========================
-     * TOGGLE ACTIVE (OPCIONAL)
-     * ==========================
-     */
-    async togglePromotion(id: number) {
-      const promo = this.promotions.find((p) => p.id === id)
-      if (!promo) return
-
-      const updatedIsActive = !promo.isActive
-
-      await api.put(`/item-promotions/${id}`, {
-        isActive: updatedIsActive,
-      })
-
-      promo.isActive = updatedIsActive
+      this.error = null
+      try {
+        await api.delete(`/item-promotions/${id}`)
+        this.promotions = this.promotions.filter((p) => p.id !== id)
+        return true
+      } catch (err: unknown) {
+        this.error = describeError(err, 'Erro ao remover promoção')
+        return false
+      }
     },
   },
 })

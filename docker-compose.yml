@@ -1,5 +1,3 @@
-version: "3.9"
-
 name: pharmacy-system
 
 services:
@@ -15,41 +13,28 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "3306:3306"
+    # Not published to the host: the database is only reachable from the
+    # internal pharmacy_network. Use `docker compose exec db mysql ...` for
+    # maintenance, or docker-compose.dev.yml to expose it locally.
     volumes:
       - db_data:/var/lib/mysql
-      - ./Database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      - ./Database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-uroot",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 30s
-    networks:
-      - pharmacy_network
-
-  # ==========================
-  # BACKEND (.NET API)
-  # ==========================
-  backend:
-    image: ghcr.io/eduardohanacleto/pharmacy-backend:latest
-    container_name: pharmacy_api
-    restart: unless-stopped
-    depends_on:
-      - db
-      - redis
-    environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: >
-        server=db;
-        port=3306;
-        database=${MYSQL_DATABASE};
-        user=${MYSQL_USER};
-        password=${MYSQL_PASSWORD}
-    ports:
-      - "5000:80"
     networks:
       - pharmacy_network
 
@@ -59,7 +44,43 @@ services:
   redis:
     image: redis:7
     container_name: pharmacy_redis
-    restart: always
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pharmacy_network
+
+  # ==========================
+  # BACKEND (.NET API)
+  # ==========================
+  backend:
+    build:
+      context: ./backend
+    image: ghcr.io/eduardohanacleto/pharmacy-backend:latest
+    container_name: pharmacy_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: >-
+        server=db;port=3306;database=${MYSQL_DATABASE};user=${MYSQL_USER};password=${MYSQL_PASSWORD}
+      ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
+      Cors__AllowedOrigins: ${CORS_ALLOWED_ORIGINS}
+    volumes:
+      # Uploaded promotion images. Without this the container filesystem is
+      # discarded on every rebuild and the database is left pointing at
+      # image URLs that no longer resolve.
+      - promotion_images:/app/wwwroot/images
     networks:
       - pharmacy_network
 
@@ -67,6 +88,10 @@ services:
   # FRONTEND (Vue + Nginx)
   # ==========================
   frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_WHATSAPP_NUMBER: ${VITE_WHATSAPP_NUMBER}
     image: ghcr.io/eduardohanacleto/pharmacy-frontend:latest
     container_name: pharmacy_frontend
     restart: unless-stopped
@@ -82,6 +107,8 @@ services:
 # ==========================
 volumes:
   db_data:
+  redis_data:
+  promotion_images:
 
 # ==========================
 # NETWORK

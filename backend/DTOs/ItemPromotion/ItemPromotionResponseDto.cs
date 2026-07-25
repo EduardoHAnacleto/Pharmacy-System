@@ -1,9 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using PharmacyWorkerAPI.Models;
-
-namespace PharmacyWorkerAPI.DTOs.ItemPromotion
+﻿namespace PharmacyWorkerAPI.DTOs.ItemPromotion
 {
-    [Consumes("multipart/form-data")]
     public class ItemPromotionResponseDto
     {
         public int Id { get; set; }

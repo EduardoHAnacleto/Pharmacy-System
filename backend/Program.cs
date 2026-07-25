@@ -1,38 +1,56 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using PharmacyWorkerAPI.Data;
 using PharmacyWorkerAPI.Hubs;
 using PharmacyWorkerAPI.Services;
 using StackExchange.Redis;
-using System.Reflection;
-using static System.Net.WebRequestMethods;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers
+// ===============================
+// CONFIGURATION
+// ===============================
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection is not configured. Set the "
+        + "ConnectionStrings__DefaultConnection environment variable.");
+}
+
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+if (string.IsNullOrWhiteSpace(redisConnectionString))
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings:Redis is not configured. Set the "
+        + "ConnectionStrings__Redis environment variable.");
+}
+
+// Comma-separated list, e.g. "https://shop.example.com,http://localhost:5173".
+var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? string.Empty)
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+// ===============================
+// SERVICES
+// ===============================
 builder.Services.AddControllers();
-builder.Services.AddDirectoryBrowser();
-// SignalR
+
 builder.Services.AddSignalR(options =>
 {
-    options.EnableDetailedErrors = true;
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
 });
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 30 * 1024 * 1024; // 50MB
+    options.Limits.MaxRequestBodySize = 30 * 1024 * 1024; // 30 MB
 });
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Redis
-builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 {
-    var options = ConfigurationOptions.Parse(
-        builder.Configuration.GetConnectionString("Redis")!
-    );
+    var options = ConfigurationOptions.Parse(redisConnectionString);
     options.AbortOnConnectFail = false;
     return ConnectionMultiplexer.Connect(options);
 });
@@ -43,31 +61,33 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
+        if (allowedOrigins.Length == 0)
+        {
+            // No origins configured: allow same-origin only. In the shipped
+            // deployment nginx serves the SPA and proxies /api, so browsers
+            // never issue a cross-origin request in the first place.
+            policy.WithOrigins(Array.Empty<string>());
+            return;
+        }
+
         policy
-            .WithOrigins(
-                "http://localhost:5173",
-                "http://frontend:5173",
-                "http://localhost:3000",
-                "http://localhost:80",
-                "http://localhost:5000",
-                "http://localhost"
-            )
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials()
-            .SetIsOriginAllowed(origin => true);
+            .AllowCredentials();
     });
 });
 
-// Database
-
-var connectionString =
-    builder.Configuration.GetConnectionString("DefaultConnection");
+// Database. The server version is configured rather than auto-detected:
+// AutoDetect opens a connection while the service collection is being built,
+// which turns a database that is not yet accepting connections into a failed
+// startup instead of a retried query.
+var serverVersion = builder.Configuration["Database:ServerVersion"] ?? "8.0";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         connectionString,
-        ServerVersion.Parse("8.0.45-mysql"),
+        ServerVersion.Parse(serverVersion),
         mysqlOptions =>
         {
             mysqlOptions.EnableRetryOnFailure(
@@ -82,6 +102,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
+// ===============================
+// PIPELINE
+// ===============================
 app.UseRouting();
 app.UseCors("FrontendPolicy");
 app.UseStaticFiles();
@@ -94,18 +117,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthorization();
 
-try
-{
-    app.MapControllers();
-}
-catch (ReflectionTypeLoadException ex)
-{
-    foreach (var e in ex.LoaderExceptions)
-    {
-        Console.WriteLine(e?.Message);
-    }
-    throw;
-}
+app.MapControllers();
+
 app.MapHub<PromotionsHub>("/promotionsHub")
     .RequireCors("FrontendPolicy");
 

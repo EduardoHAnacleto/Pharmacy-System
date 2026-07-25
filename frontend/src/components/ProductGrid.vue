@@ -54,27 +54,15 @@
 
 <script setup lang="ts">
 import { useCartStore } from '@/stores/cart'
-
-/**
- * DTO (GET)
- */
-export interface Product {
-  id: number
-  name: string
-  price: number
-  priceBefore?: number | null
-  imageUrl: string
-  dateStart?: string
-  dateEnd?: string
-}
+import type { ItemPromotion } from '@/types/itemPromotion'
 
 defineProps<{
-  products: Product[]
+  products: ItemPromotion[]
 }>()
 
 const cartStore = useCartStore()
 
-function addToCart(item: Product) {
+function addToCart(item: ItemPromotion) {
   cartStore.addItem({
     id: item.id,
     name: item.name,

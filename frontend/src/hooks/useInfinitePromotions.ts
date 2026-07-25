@@ -21,8 +21,6 @@ export function useInfinitePromotions() {
 
     try {
       const result = await getActivePromotionsPaged(page.value, pageSize.value)
-      //
-      console.log(result.items)
       promotions.value.push(...result.items)
 
       hasMore.value = result.hasMore

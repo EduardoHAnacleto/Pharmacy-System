@@ -1,0 +1,18 @@
+# Local development overrides.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Adds the things that must NOT be present in production: the developer
+# exception page and Swagger, plus host-published ports for the API and the
+# database so they can be reached from the host machine.
+
+services:
+  db:
+    ports:
+      - "3306:3306"
+
+  backend:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5000:80"

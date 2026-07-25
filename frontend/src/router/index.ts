@@ -10,7 +10,8 @@ const router = createRouter({
       component: HomeView,
     },
     {
-      path: '/Contact',
+      path: '/contact',
+      name: 'contact',
       component: ContactView,
     },
     {
@@ -44,7 +45,7 @@ router.beforeEach((to) => {
   if (!isAuthenticated) {
     return '/login'
   }
-  console.log('GUARD:', to.path, localStorage.getItem('admin_authenticated')) // DEBUG
+
   return true
 })
 

@@ -125,7 +125,7 @@
               <strong>R$ {{ cart.finalTotal.toFixed(2) }}</strong>
             </div>
 
-            <button class="btn btn-success w-100 mt-3" @click="abrirConfirmacao">
+            <button class="btn btn-success w-100 mt-3" @click="openConfirmation">
               Confirmar Pedido
             </button>
           </div>
@@ -152,7 +152,7 @@
 
           <div class="modal-footer">
             <button class="btn btn-secondary" @click="showModal = false">Cancelar</button>
-            <button class="btn btn-success" @click="confirmarPedido">Confirmar</button>
+            <button class="btn btn-success" @click="confirmOrder">Confirmar</button>
           </div>
         </div>
       </div>
@@ -176,34 +176,9 @@ const showModal = ref(false)
 const cpfError = ref('')
 const nameError = ref('')
 
-/* =========================
-   VALIDATION CPF
-========================= */
-function validateCPF(cpf: string): boolean {
-  cpf = cpf.replace(/\D/g, '')
-
-  if (cpf.length !== 11) return false
-  if (/^(\d)\1+$/.test(cpf)) return false
-
-  let sum = 0
-  for (let i = 0; i < 9; i++) {
-    sum += parseInt(cpf.charAt(i)) * (10 - i)
-  }
-
-  let firstDigit = 11 - (sum % 11)
-  if (firstDigit >= 10) firstDigit = 0
-  if (firstDigit !== parseInt(cpf.charAt(9))) return false
-
-  sum = 0
-  for (let i = 0; i < 10; i++) {
-    sum += parseInt(cpf.charAt(i)) * (11 - i)
-  }
-
-  let secondDigit = 11 - (sum % 11)
-  if (secondDigit >= 10) secondDigit = 0
-
-  return secondDigit === parseInt(cpf.charAt(10))
-}
+// Destination for the order handoff. Set VITE_WHATSAPP_NUMBER at build time
+// (docker-compose.yml passes it through as a build arg).
+const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER ?? '5545999975299'
 
 /* =========================
    VALIDATIONS
@@ -233,7 +208,9 @@ function validateForm(): boolean {
     valid = false
   }
 
-  if (!checkout.cpf || !validateCPF(checkout.cpf)) {
+  // Single source of truth: the store getter. A second copy of the check-digit
+  // algorithm here is how the two versions drifted apart in the first place.
+  if (!checkout.isCpfValid) {
     cpfError.value = 'CPF inválido'
     valid = false
   }
@@ -241,7 +218,7 @@ function validateForm(): boolean {
   return valid
 }
 
-function abrirConfirmacao() {
+function openConfirmation() {
   checkout.showErrors = true
 
   const formValid = validateForm()
@@ -263,7 +240,7 @@ function getFormattedDateTime() {
   return `${date} às ${time}`
 }
 
-function confirmarPedido() {
+function confirmOrder() {
   const itens = cart.items
     .map((i) => `• ${i.name} x${i.quantity} — R$ ${(i.price * i.quantity).toFixed(2)}`)
     .join('\n')
@@ -309,7 +286,7 @@ ${itens}
 💰 Total: R$ ${cart.finalTotal.toFixed(2)}
   `.trim()
 
-  window.open(`https://wa.me/5545999975299?text=${encodeURIComponent(message)}`, '_blank')
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank')
 
   cart.clearCart()
   checkout.reset()
