@@ -46,7 +46,11 @@ jobs:
         run: |
           dotnet tool install --global dotnet-ef --version 9.* >/dev/null
           export PATH="$PATH:$HOME/.dotnet/tools"
-          dotnet ef migrations has-pending-model-changes --no-build
+          # --configuration must match the Build step: with --no-build the tool
+          # loads the already-compiled assembly and defaults to looking in
+          # bin/Debug, which this job never produces.
+          dotnet ef migrations has-pending-model-changes \
+            --no-build --configuration Release
 
   frontend:
     name: Frontend
