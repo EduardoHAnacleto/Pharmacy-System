@@ -38,6 +38,9 @@ frontend/.eslintcache
 # Build folders
 backend/bin/
 backend/obj/
+tests/**/bin/
+tests/**/obj/
+TestResults/
 
 # User-specific files
 backend/*.user
@@ -104,6 +107,12 @@ ehthumbs.db
 
 coverage/
 *.lcov
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/.cache/playwright/
 
 ########################################
 # TEMP FILES

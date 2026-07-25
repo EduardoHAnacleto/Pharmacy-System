@@ -7,11 +7,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PharmacyWorkerAPI.Data;
 using PharmacyWorkerAPI.Hubs;
+using PharmacyWorkerAPI.Infrastructure;
 using PharmacyWorkerAPI.Options;
 using PharmacyWorkerAPI.Services;
+using Serilog;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ===============================
+// LOGGING
+// ===============================
+// Structured logging, configurable from appsettings without a rebuild.
+builder.Host.UseSerilog((context, loggerConfiguration) =>
+    loggerConfiguration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext());
 
 // ===============================
 // CONFIGURATION
@@ -69,10 +80,18 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Problem details for both thrown exceptions and framework-produced responses.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 // Auth
 builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddScoped<AuthService>();
+
+// Domain
+builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddSingleton<IPromotionImageStorage, PromotionImageStorage>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -178,6 +197,11 @@ var app = builder.Build();
 // ===============================
 // PIPELINE
 // ===============================
+// First in the pipeline so it also catches failures from the middleware below.
+app.UseExceptionHandler();
+
+app.UseSerilogRequestLogging();
+
 app.UseRouting();
 app.UseCors("FrontendPolicy");
 app.UseStaticFiles();
@@ -213,3 +237,10 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 await DatabaseSeeder.SeedAsync(app.Services);
 
 app.Run();
+
+/// <summary>
+/// Top-level statements generate an internal Program class. Declaring it public
+/// lets the integration tests boot the real application through
+/// WebApplicationFactory instead of re-declaring the pipeline in test code.
+/// </summary>
+public partial class Program { }

@@ -5,11 +5,11 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
 COPY *.csproj ./
-RUN dotnet restore
+RUN dotnet restore PharmacyWorkerAPI.csproj
 
 COPY . ./
 
-RUN dotnet publish -c Release -o out
+RUN dotnet publish PharmacyWorkerAPI.csproj -c Release -o out
 
 # =========================
 # MIGRATION BUNDLE
@@ -26,11 +26,15 @@ ENV PATH="$PATH:/root/.dotnet/tools"
 RUN dotnet tool install --global dotnet-ef --version 9.*
 
 COPY *.csproj ./
-RUN dotnet restore
+RUN dotnet restore PharmacyWorkerAPI.csproj
 
 COPY . ./
 
+# --project, --output and the explicit csproj above all matter: a solution file
+# sits next to the project, and once it contains more than one project every
+# solution-scoped command becomes ambiguous or publishes the wrong thing.
 RUN dotnet ef migrations bundle \
+    --project PharmacyWorkerAPI.csproj \
     --self-contained -r linux-x64 \
     --configuration Release \
     -o /app/efbundle

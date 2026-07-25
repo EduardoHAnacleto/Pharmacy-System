@@ -17,6 +17,15 @@
               <input class="form-control" placeholder="Nome" v-model="name" />
             </div>
 
+            <div class="col-md-6 mb-2">
+              <select class="form-select" v-model="categoryId">
+                <option :value="null" disabled>Categoria</option>
+                <option v-for="category in categories" :key="category.id" :value="category.id">
+                  {{ category.name }}
+                </option>
+              </select>
+            </div>
+
             <div class="col-md-3 mb-2">
               <input
                 type="number"
@@ -117,6 +126,7 @@ import { useRouter } from 'vue-router'
 import { usePromotionsStore } from '@/stores/promotions'
 import type { PromotionCreatePayload } from '@/stores/promotions'
 import { useAuthStore } from '@/stores/auth'
+import { getCategories } from '@/services/itemPromotionService'
 
 /* ======================
    ROUTER / STORE
@@ -134,7 +144,13 @@ const priceBefore = ref<number | null>(null)
 const dateStart = ref('')
 const dateEnd = ref('')
 const isActive = ref(true)
+const categoryId = ref<number | null>(null)
 const formError = ref(false)
+
+/* ======================
+   CATEGORIES
+====================== */
+const categories = ref<{ id: number; name: string }[]>([])
 
 /* ======================
    IMAGE STATE
@@ -173,6 +189,7 @@ const isFormValid = computed(() => {
     !name.value ||
     price.value === null ||
     priceBefore.value === null ||
+    categoryId.value === null ||
     !imageFile.value ||
     !dateStart.value ||
     !dateEnd.value
@@ -202,7 +219,7 @@ async function addPromotion() {
     dateStart: dateStart.value,
     dateEnd: dateEnd.value,
     isActive: isActive.value,
-    categoryId: 1,
+    categoryId: categoryId.value!,
     productType: 'default',
   }
 
@@ -228,6 +245,7 @@ function resetForm() {
   dateStart.value = ''
   dateEnd.value = ''
   isActive.value = true
+  categoryId.value = null
   imageFile.value = null
   imagePreview.value = undefined
 }
@@ -245,7 +263,15 @@ async function logout() {
 /* ======================
    LIFECYCLE
 ====================== */
-onMounted(() => {
+onMounted(async () => {
   promotionsStore.loadPromotions()
+
+  try {
+    categories.value = await getCategories()
+  } catch {
+    // The form stays unusable without a category, and requestError already
+    // reports save failures; nothing useful to add here.
+    categories.value = []
+  }
 })
 </script>

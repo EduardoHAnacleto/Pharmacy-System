@@ -4,7 +4,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 // the built image, and vite.config.ts proxies it during development, so the
 // bundle never needs to know the API's host or port.
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: '/api/v1',
   // Required for the HttpOnly refresh cookie to travel with /auth requests.
   withCredentials: true,
 })

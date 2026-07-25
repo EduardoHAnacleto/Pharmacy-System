@@ -7,11 +7,17 @@ using PharmacyWorkerAPI.Services;
 namespace PharmacyWorkerAPI.Controllers
 {
     [ApiController]
-    [Route("api/auth")]
+    [Route("api/v1/auth")]
     public class AuthController : ControllerBase
     {
         /// <summary>Name of the cookie carrying the refresh token.</summary>
         private const string RefreshCookieName = "pharmacy_refresh";
+
+        /// <summary>
+        /// Path the refresh cookie is scoped to. Must match the controller route:
+        /// a mismatch means the browser never sends the cookie to /refresh.
+        /// </summary>
+        private const string RefreshCookiePath = "/api/v1/auth";
 
         private readonly AuthService _authService;
         private readonly IWebHostEnvironment _environment;
@@ -127,7 +133,7 @@ namespace PharmacyWorkerAPI.Controllers
             SameSite = SameSiteMode.Strict,
 
             // Scoped to the auth endpoints: no other request needs to carry it.
-            Path = "/api/auth",
+            Path = RefreshCookiePath,
 
             Expires = new DateTimeOffset(expiresAtUtc, TimeSpan.Zero),
         };
