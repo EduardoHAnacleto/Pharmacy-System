@@ -93,6 +93,9 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IMediaAssetService, MediaAssetService>();
 builder.Services.AddScoped<IAuditLogger, AuditLogger>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddSingleton<IPromotionImageStorage, PromotionImageStorage>();
 
 // Records status transitions and reconciles missing image files.
@@ -138,6 +141,30 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = rateLimitOptions.LoginPermitLimit,
                 Window = TimeSpan.FromSeconds(rateLimitOptions.LoginWindowSeconds),
+                QueueLimit = 0,
+            }));
+
+    // Telemetry ingestion is public and batched, so the ceiling is generous but
+    // still bounded — an open write endpoint is otherwise a way to fill a disk.
+    options.AddPolicy("events", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimitOptions.EventsPermitLimit,
+                Window = TimeSpan.FromSeconds(rateLimitOptions.EventsWindowSeconds),
+                QueueLimit = 0,
+            }));
+
+    // Orders are also public. A tighter limit keeps a script from polluting the
+    // sales figures the dashboard reports on.
+    options.AddPolicy("orders", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimitOptions.OrdersPermitLimit,
+                Window = TimeSpan.FromSeconds(rateLimitOptions.OrdersWindowSeconds),
                 QueueLimit = 0,
             }));
 });

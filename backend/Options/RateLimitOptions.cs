@@ -17,5 +17,15 @@ namespace PharmacyWorkerAPI.Options
         public int LoginPermitLimit { get; set; } = 5;
 
         public int LoginWindowSeconds { get; set; } = 300;
+
+        /// <summary>Telemetry batches permitted per window, per IP.</summary>
+        public int EventsPermitLimit { get; set; } = 120;
+
+        public int EventsWindowSeconds { get; set; } = 60;
+
+        /// <summary>Orders permitted per window, per IP.</summary>
+        public int OrdersPermitLimit { get; set; } = 10;
+
+        public int OrdersWindowSeconds { get; set; } = 300;
     }
 }

@@ -58,7 +58,14 @@ namespace PharmacyWorkerAPI.Services
         {
             using var scope = _services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
+            await RecordStatusTransitionsAsync(context, ct);
+            await RollUpAnalyticsAsync(context, configuration, ct);
+        }
+
+        private async Task RecordStatusTransitionsAsync(AppDbContext context, CancellationToken ct)
+        {
             var now = DateTime.UtcNow;
 
             // Scheduled -> Active, and Active/Scheduled -> Expired.
@@ -100,6 +107,88 @@ namespace PharmacyWorkerAPI.Services
                 await context.SaveChangesAsync(ct);
                 _logger.LogInformation("Recorded {Count} promotion status transitions.", transitions);
             }
+        }
+
+        /// <summary>
+        /// Aggregates raw events into daily counts, then purges the raw rows past
+        /// the retention window.
+        /// </summary>
+        /// <remarks>
+        /// This is both the cost control and the privacy control: the aggregate
+        /// keeps reporting cheap and available indefinitely, while the per-visit
+        /// session keys — the only thing linking two events together — stop existing
+        /// once their day has been rolled up.
+        /// </remarks>
+        private async Task RollUpAnalyticsAsync(
+            AppDbContext context, IConfiguration configuration, CancellationToken ct)
+        {
+            var retentionDays = configuration.GetValue<int?>("Analytics:RawRetentionDays") ?? 90;
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // Only complete days are rolled up; today is still accumulating.
+            var pendingDates = await context.AnalyticsEvents
+                .Select(e => DateOnly.FromDateTime(e.OccurredAt))
+                .Distinct()
+                .Where(d => d < today)
+                .ToListAsync(ct);
+
+            foreach (var date in pendingDates)
+            {
+                var dayStart = date.ToDateTime(TimeOnly.MinValue);
+                var dayEnd = date.ToDateTime(TimeOnly.MaxValue);
+
+                var aggregates = await context.AnalyticsEvents
+                    .Where(e => e.OccurredAt >= dayStart && e.OccurredAt <= dayEnd)
+                    .GroupBy(e => new { e.EventType, e.PromotionId })
+                    .Select(g => new
+                    {
+                        g.Key.EventType,
+                        g.Key.PromotionId,
+                        EventCount = g.Count(),
+                        UniqueSessions = g.Select(e => e.SessionKey).Distinct().Count(),
+                    })
+                    .ToListAsync(ct);
+
+                foreach (var aggregate in aggregates)
+                {
+                    // Upsert, so re-running the sweep is idempotent.
+                    var existing = await context.AnalyticsDaily
+                        .FirstOrDefaultAsync(
+                            d => d.StatDate == date
+                                 && d.EventType == aggregate.EventType
+                                 && d.PromotionId == aggregate.PromotionId,
+                            ct);
+
+                    if (existing == null)
+                    {
+                        context.AnalyticsDaily.Add(new AnalyticsDaily
+                        {
+                            StatDate = date,
+                            EventType = aggregate.EventType,
+                            PromotionId = aggregate.PromotionId,
+                            EventCount = aggregate.EventCount,
+                            UniqueSessions = aggregate.UniqueSessions,
+                        });
+                    }
+                    else
+                    {
+                        existing.EventCount = aggregate.EventCount;
+                        existing.UniqueSessions = aggregate.UniqueSessions;
+                    }
+                }
+
+                await context.SaveChangesAsync(ct);
+            }
+
+            // Purge only what has been aggregated.
+            var cutoff = DateTime.UtcNow.AddDays(-retentionDays);
+
+            var purged = await context.AnalyticsEvents
+                .Where(e => e.OccurredAt < cutoff)
+                .ExecuteDeleteAsync(ct);
+
+            if (purged > 0)
+                _logger.LogInformation("Purged {Count} raw analytics events past retention.", purged);
         }
     }
 }

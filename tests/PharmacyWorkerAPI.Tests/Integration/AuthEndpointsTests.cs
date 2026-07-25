@@ -39,13 +39,21 @@ public class AuthEndpointsTests
     public async Task Login_PutsTheRefreshTokenInAnHttpOnlyCookieAndNotTheBody()
     {
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
-        using var client = _fixture.CreateClient();
+
+        // Server.CreateClient(), not the factory's: the factory's default client
+        // wraps a cookie container that consumes Set-Cookie, so the header this
+        // test is about is no longer visible on the response.
+        using var client = _fixture.Server.CreateClient();
 
         var response = await client.PostAsJsonAsync(
             "/api/v1/auth/login",
             Credentials(ApiFixture.AdminUsername, ApiFixture.AdminPassword));
 
-        var setCookie = Assert.Single(response.Headers.GetValues("Set-Cookie"));
+        Assert.True(
+            response.Headers.TryGetValues("Set-Cookie", out var cookies),
+            $"Login returned {response.StatusCode} with no Set-Cookie header.");
+
+        var setCookie = Assert.Single(cookies!);
 
         Assert.Contains("pharmacy_refresh=", setCookie, StringComparison.Ordinal);
         Assert.Contains("httponly", setCookie, StringComparison.OrdinalIgnoreCase);
@@ -155,7 +163,14 @@ internal static class LoginHelper
             "/api/v1/auth/login",
             new { username = ApiFixture.AdminUsername, password = ApiFixture.AdminPassword });
 
-        response.EnsureSuccessStatusCode();
+        // Asserted rather than EnsureSuccessStatusCode: that throws an exception
+        // naming only the status, which made a login failure here look like an
+        // unrelated defect in whichever test happened to need a token.
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.Fail($"Login failed with {(int)response.StatusCode} {response.StatusCode}: {body}");
+        }
 
         var result = await response.Content.ReadFromJsonAsync<AuthResultDto>();
 

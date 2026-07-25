@@ -70,14 +70,27 @@ public class PromotionEndpointsTests
     }
 
     [SkippableFact]
-    public async Task Delete_WithoutAToken_Returns401()
+    public async Task Archive_WithoutAToken_Returns401()
     {
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
         using var client = _fixture.CreateClient();
 
-        var response = await client.DeleteAsync("/api/v1/item-promotions/1");
+        var response = await client.PatchAsync("/api/v1/item-promotions/1/archive", null);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Delete_IsNoLongerExposed()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        // Destructive delete was removed on purpose: it took the row and the image
+        // file with it, so a finished promotion could never be run again.
+        var response = await client.DeleteAsync("/api/v1/item-promotions/1");
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
     }
 
     [SkippableFact]
@@ -202,31 +215,109 @@ public class PromotionEndpointsTests
     }
 
     [SkippableFact]
-    public async Task Delete_RemovesThePromotion()
+    public async Task Archive_KeepsThePromotionAndItsImage()
     {
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
         using var client = await AuthenticatedClientAsync();
 
         var created = await client.PostAsync(
-            "/api/v1/item-promotions", BuildForm(ValidPng, name: "To delete"));
+            "/api/v1/item-promotions", BuildForm(ValidPng, name: "To archive"));
         var dto = await created.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
 
-        var deleted = await client.DeleteAsync($"/api/v1/item-promotions/{dto!.Id}");
-        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        var archived = await client.PatchAsync($"/api/v1/item-promotions/{dto!.Id}/archive", null);
+        Assert.Equal(HttpStatusCode.OK, archived.StatusCode);
 
-        var fetched = await client.GetAsync($"/api/v1/item-promotions/{dto.Id}");
-        Assert.Equal(HttpStatusCode.NotFound, fetched.StatusCode);
+        var result = await archived.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+        Assert.Equal("Archived", result!.Status);
+        Assert.NotNull(result.ArchivedAt);
+
+        // The row survives — this is the whole point of archiving — and keeps the
+        // same image URL, so it can be reactivated without a re-upload.
+        var fetched = await client.GetFromJsonAsync<ItemPromotionResponseDto>(
+            $"/api/v1/item-promotions/{dto.Id}");
+
+        Assert.Equal("Archived", fetched!.Status);
+        Assert.Equal(dto.ImageUrl, fetched.ImageUrl);
+        Assert.False(fetched.ImageMissing);
     }
 
     [SkippableFact]
-    public async Task Delete_AnUnknownId_Returns404()
+    public async Task Archive_HidesThePromotionFromTheStorefront()
     {
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
         using var client = await AuthenticatedClientAsync();
 
-        var response = await client.DeleteAsync("/api/v1/item-promotions/999999");
+        var created = await client.PostAsync(
+            "/api/v1/item-promotions", BuildForm(ValidPng, name: "Hide me"));
+        var dto = await created.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+
+        await client.PatchAsync($"/api/v1/item-promotions/{dto!.Id}/archive", null);
+
+        var visible = await client.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            "/api/v1/item-promotions/active?page=1&pageSize=50");
+
+        Assert.DoesNotContain(visible!.Items, p => p.Id == dto.Id);
+    }
+
+    [SkippableFact]
+    public async Task Reactivate_ClonesWithTheSameImageAndRecordsLineage()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var created = await client.PostAsync(
+            "/api/v1/item-promotions", BuildForm(ValidPng, name: "Runs again"));
+        var original = await created.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+
+        await client.PatchAsync($"/api/v1/item-promotions/{original!.Id}/archive", null);
+
+        var reactivated = await client.PostAsJsonAsync(
+            $"/api/v1/item-promotions/{original.Id}/reactivate",
+            new
+            {
+                dateStart = "2026-02-01T00:00:00Z",
+                dateEnd = "2099-12-31T00:00:00Z",
+                publish = true,
+            });
+
+        Assert.Equal(HttpStatusCode.Created, reactivated.StatusCode);
+
+        var clone = await reactivated.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+
+        Assert.NotEqual(original.Id, clone!.Id);
+        // Same artwork, no second upload and no second copy on disk.
+        Assert.Equal(original.ImageUrl, clone.ImageUrl);
+        // The chain that makes "this campaign has run before" answerable.
+        Assert.Equal(original.Id, clone.SourcePromotionId);
+    }
+
+    [SkippableFact]
+    public async Task Archive_AnUnknownId_Returns404()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var response = await client.PatchAsync("/api/v1/item-promotions/999999/archive", null);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task ArchivedPromotions_AreListedForReactivation()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var created = await client.PostAsync(
+            "/api/v1/item-promotions", BuildForm(ValidPng, name: "In the library"));
+        var dto = await created.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+
+        await client.PatchAsync($"/api/v1/item-promotions/{dto!.Id}/archive", null);
+
+        var library = await client.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            "/api/v1/item-promotions?status=Archived&page=1&pageSize=50");
+
+        Assert.Contains(library!.Items, p => p.Id == dto.Id);
     }
 
     // ===============================

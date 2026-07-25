@@ -14,6 +14,10 @@ namespace PharmacyWorkerAPI.Data
         public DbSet<MediaAsset> MediaAssets { get; set; } = null!;
         public DbSet<PromotionStatusHistory> PromotionStatusHistory { get; set; } = null!;
         public DbSet<AuditLogEntry> AuditLog { get; set; } = null!;
+        public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; } = null!;
+        public DbSet<AnalyticsDaily> AnalyticsDaily { get; set; } = null!;
+        public DbSet<Order> Orders { get; set; } = null!;
+        public DbSet<OrderItem> OrderItems { get; set; } = null!;
 
         // Column facets below are not decoration: this model is now the source of
         // truth for the schema. Left unconfigured, EF picks its own defaults —
@@ -106,6 +110,78 @@ namespace PharmacyWorkerAPI.Data
                       .WithMany()
                       .HasForeignKey(e => e.PromotionId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // No PII by construction: these entities have no column for a name,
+            // phone, national ID, address, IP or user agent, so none can be stored
+            // by accident.
+            modelBuilder.Entity<AnalyticsEvent>(entity =>
+            {
+                entity.ToTable("analytics_events");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.EventType).HasMaxLength(30);
+                entity.Property(e => e.SessionKey).HasMaxLength(32).IsFixedLength();
+
+                entity.HasIndex(e => new { e.OccurredAt, e.EventType })
+                      .HasDatabaseName("ix_analytics_events_occurred");
+                entity.HasIndex(e => new { e.PromotionId, e.OccurredAt })
+                      .HasDatabaseName("ix_analytics_events_promotion");
+            });
+
+            modelBuilder.Entity<AnalyticsDaily>(entity =>
+            {
+                entity.ToTable("analytics_daily");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.EventType).HasMaxLength(30);
+
+                // One row per day, event type and promotion, so the rollup can
+                // upsert idempotently and be re-run safely.
+                entity.HasIndex(e => new { e.StatDate, e.EventType, e.PromotionId })
+                      .IsUnique()
+                      .HasDatabaseName("uq_analytics_daily");
+            });
+
+            modelBuilder.Entity<Order>(entity =>
+            {
+                entity.ToTable("orders");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.OrderNumber).HasMaxLength(20);
+                entity.Property(e => e.FulfillmentType).HasMaxLength(20);
+                entity.Property(e => e.PaymentMethod).HasMaxLength(20);
+                entity.Property(e => e.DeliveryCity).HasMaxLength(100);
+                entity.Property(e => e.Currency).HasMaxLength(3).IsFixedLength();
+                entity.Property(e => e.ItemsSubtotal).HasPrecision(10, 2);
+                entity.Property(e => e.DeliveryFee).HasPrecision(10, 2);
+                entity.Property(e => e.Total).HasPrecision(10, 2);
+
+                entity.HasIndex(e => e.OrderNumber).IsUnique();
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("ix_orders_created");
+            });
+
+            modelBuilder.Entity<OrderItem>(entity =>
+            {
+                entity.ToTable("order_items");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.NameSnapshot).HasMaxLength(150);
+                entity.Property(e => e.UnitPriceSnapshot).HasPrecision(10, 2);
+                entity.Property(e => e.LineTotal).HasPrecision(10, 2);
+
+                entity.HasOne(e => e.Order)
+                      .WithMany(o => o.Items)
+                      .HasForeignKey(e => e.OrderId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // SetNull, not Cascade: purging a promotion must not delete the
+                // sales history that references it. The snapshot keeps the line
+                // readable on its own.
+                entity.HasOne<ItemPromotion>()
+                      .WithMany()
+                      .HasForeignKey(e => e.PromotionId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<AuditLogEntry>(entity =>
