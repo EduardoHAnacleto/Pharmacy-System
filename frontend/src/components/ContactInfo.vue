@@ -5,69 +5,84 @@
         <div class="col-lg-8">
           <div class="card shadow-sm">
             <div class="card-body p-4">
-              <h2 class="fw-bolder mb-4 text-center">Contato</h2>
+              <h2 class="fw-bolder mb-4 text-center">{{ t('contact.title') }}</h2>
 
               <ul class="list-group list-group-flush">
-                <li class="list-group-item">
-                  <strong>Telefone:</strong>
-                  <a href="tel:+641111111111" class="text-decoration-none ms-2">
-                    (00) 12345-6789
+                <!-- PHONE -->
+                <li v-if="store.phone || store.whatsAppNumber" class="list-group-item">
+                  <strong>{{ t('contact.phone') }}:</strong>
+
+                  <a v-if="store.phone" :href="`tel:${telHref}`" class="text-decoration-none ms-2">
+                    {{ store.phone }}
                   </a>
-                  <a href="tel:+641111111111" class="text-decoration-none ms-2">
-                    Ou (00) 1234-6789
-                  </a>
+
                   <a
-                    href="https://wa.me/641111111111?text=Olá,%20gostaria%20de%20mais%20informações"
+                    v-if="whatsAppHref"
+                    :href="whatsAppHref"
                     target="_blank"
+                    rel="noopener"
                     class="text-decoration-none ms-2 d-inline-flex align-items-center"
                   >
-                    <i class="bi bi-whatsapp text-success me-1"></i>
-                    Falar no WhatsApp
+                    <i class="bi bi-whatsapp text-success me-1" aria-hidden="true"></i>
+                    {{ t('contact.whatsapp') }}
                   </a>
                 </li>
 
-                <p class="list-group-item">
-                  <strong>E-mail:</strong>
-                  <a
-                    href="mailto:EMAIL@MAIL.com?subject=Contato%20via%20Site"
-                    class="text-decoration-none ms-2"
-                  >
-                    EMAIL@mail.com
-                  </a>
-                </p>
+                <!-- EMAIL -->
+                <li v-if="store.email" class="list-group-item">
+                  <strong>{{ t('contact.email') }}:</strong>
+                  <a :href="mailHref" class="text-decoration-none ms-2">{{ store.email }}</a>
+                </li>
 
-                <li class="list-group-item">
-                  <strong>Endereço:</strong>
-                  ADDRESS ADDRESS ADDRESS
+                <!-- ADDRESS -->
+                <li v-if="addressLine" class="list-group-item">
+                  <strong>{{ t('contact.address') }}:</strong>
+                  {{ addressLine }}
                   <a
-                    href="https://www.google.com/maps/search/?api=1&query=TOWER+OF+PISA"
+                    v-if="mapSearchUrl"
+                    :href="mapSearchUrl"
                     target="_blank"
+                    rel="noopener"
                     class="text-decoration-none ms-2"
                   >
-                    (Ver no mapa)
+                    {{ t('contact.viewOnMap') }}
                   </a>
                 </li>
+
+                <!-- OPENING HOURS -->
                 <li class="list-group-item">
-                  <strong>Horário de funcionamento:</strong>
-                  <span class="ms-2 d-block">
-                    Segunda a Sexta: 08:00 às 20:00<br />
-                    Sábado: 08:00 às 14:00<br />
-                    Domingo: Fechado
+                  <strong>{{ t('contact.openingHours') }}:</strong>
+
+                  <span v-if="!settings.hasOpeningHours" class="ms-2 d-block text-muted">
+                    {{ t('contact.noHours') }}
+                  </span>
+
+                  <span v-else class="ms-2 d-block">
+                    <span v-for="day in week" :key="day.weekday" class="d-block">
+                      {{ t(`weekday.${day.weekday}`) }}: {{ day.label }}
+                    </span>
                   </span>
                 </li>
-                <p class="mt-3">
-                  <strong>Status:</strong>
+
+                <!-- STATUS -->
+                <li class="list-group-item">
+                  <strong>{{ t('contact.status') }}:</strong>
                   <span class="ms-2 badge" :class="isOpen ? 'bg-success' : 'bg-danger'">
-                    {{ isOpen ? 'Aberto agora' : 'Fechado agora' }}
+                    {{ isOpen ? t('contact.open') : t('contact.closed') }}
                   </span>
-                </p>
+                  <span v-if="todayHoliday" class="ms-2 text-muted small">
+                    {{
+                      t('contact.holiday', { name: todayHoliday.localName || todayHoliday.name })
+                    }}
+                  </span>
+                </li>
               </ul>
-              <p class="text-muted small">
-                {{ todaySchedule }}
-              </p>
-              <div class="ratio ratio-16x9 mt-3">
+
+              <!-- MAP -->
+              <div v-if="mapEmbedUrl" class="ratio ratio-16x9 mt-3">
                 <iframe
-                  src="https://www.google.com/maps?q=TOWER+OF+PISA&output=embed"
+                  :src="mapEmbedUrl"
+                  :title="t('contact.address')"
                   style="border: 0"
                   allowfullscreen
                   loading="lazy"
@@ -84,75 +99,114 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { getHolidays } from '@/services/holidayService'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getHolidays, type Holiday } from '@/services/holidayService'
+import { useSettingsStore } from '@/stores/settings'
 
-interface Holiday {
-  date: string
-  name: string
-}
+const { t } = useI18n()
+const settings = useSettingsStore()
+
+const store = computed(() => settings.settings)
 
 const holidays = ref<Holiday[]>([])
 const now = ref(new Date())
 
-const openingRules = {
-  weekday: { start: 8, end: 18 },
-  saturday: { start: 8, end: 12 },
-  holiday: { start: 9, end: 13 },
-}
-
-function getCompanyDate(): Date {
-  const nowUTC = new Date()
-  const offsetMinutes = nowUTC.getTimezoneOffset()
-  const saoPauloOffset = 180
-  return new Date(nowUTC.getTime() + (offsetMinutes - saoPauloOffset) * 60000)
-}
+let ticker: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
-  holidays.value = await getHolidays(new Date().getFullYear())
+  // Country comes from settings, so a shop outside Brazil gets its own calendar
+  // instead of the /BR that used to be hardcoded into the URL.
+  try {
+    holidays.value = await getHolidays(new Date().getFullYear(), store.value.countryCode)
+  } catch {
+    // Opening hours still work without the holiday calendar; a third-party
+    // outage must not blank the contact page.
+    holidays.value = []
+  }
 
-  setInterval(() => {
-    now.value = getCompanyDate()
+  ticker = setInterval(() => {
+    now.value = new Date()
   }, 60000)
 })
 
+onBeforeUnmount(() => {
+  if (ticker) clearInterval(ticker)
+})
+
+// ===== CONTACT LINKS =====
+
+const telHref = computed(() => (store.value.phone ?? '').replace(/[^\d+]/g, ''))
+
+const mailHref = computed(() => `mailto:${store.value.email}`)
+
+const whatsAppHref = computed(() => {
+  const number = settings.whatsAppNumber
+  if (!number) return null
+
+  return `https://wa.me/${number}?text=${encodeURIComponent(t('contact.whatsappGreeting'))}`
+})
+
+const addressLine = computed(
+  () => [store.value.address, store.value.city].filter(Boolean).join(' - ') || null,
+)
+
+// ===== MAP =====
+
+/**
+ * Built from the shop's own address rather than a pasted embed URL.
+ *
+ * The original markup embedded a fixed URL — pointing at the Tower of Pisa — which
+ * no second shop could change and which nobody could correct from the admin
+ * screen. Deriving it from the address means it is right by construction.
+ */
+const mapEmbedUrl = computed(() => {
+  const query = settings.mapQuery
+  if (!query) return null
+
+  return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`
+})
+
+const mapSearchUrl = computed(() => {
+  const query = settings.mapQuery
+  if (!query) return null
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+})
+
+// ===== OPENING HOURS =====
+
 const todayISO = computed(() => {
-  const d = now.value
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-    d.getDate(),
-  ).padStart(2, '0')}`
+  // Formatted in the shop's time zone: "today" for the holiday lookup has to be
+  // the shop's today, not the visitor's.
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: store.value.timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(now.value)
+  } catch {
+    return now.value.toISOString().slice(0, 10)
+  }
 })
 
 const todayHoliday = computed(() => holidays.value.find((h) => h.date === todayISO.value))
 
-const isOpen = computed(() => {
-  const hour = now.value.getHours()
-  const day = now.value.getDay()
+const isOpen = computed(() => settings.isOpenAt(now.value, Boolean(todayHoliday.value)))
 
-  if (todayHoliday.value) {
-    return hour >= openingRules.holiday.start && hour < openingRules.holiday.end
-  }
+/** Monday-first week with each day's ranges rendered as a single string. */
+const week = computed(() =>
+  [1, 2, 3, 4, 5, 6, 7].map((weekday) => {
+    const ranges = store.value.openingHours[String(weekday)] ?? []
 
-  if (day >= 1 && day <= 5) {
-    return hour >= openingRules.weekday.start && hour < openingRules.weekday.end
-  }
-
-  if (day === 6) {
-    return hour >= openingRules.saturday.start && hour < openingRules.saturday.end
-  }
-
-  return false
-})
-
-const todaySchedule = computed(() => {
-  if (todayHoliday.value) {
-    return `Feriado (${todayHoliday.value.name}): 09:00 às 13:00`
-  }
-
-  const day = now.value.getDay()
-  if (day === 6) return 'Sábado: 08:00 às 12:00'
-  if (day === 0) return 'Domingo: fechado'
-
-  return 'Seg–Sex: 08:00 às 18:00'
-})
+    return {
+      weekday,
+      label:
+        ranges.length > 0
+          ? ranges.map((r) => `${r.open} – ${r.close}`).join(', ')
+          : t('contact.closedAllDay'),
+    }
+  }),
+)
 </script>

@@ -5,32 +5,34 @@
         <div class="col-md-4">
           <div class="card shadow-sm">
             <div class="card-body">
-              <h4 class="mb-3 text-center">Admin Login</h4>
+              <h4 class="mb-3 text-center">{{ t('auth.title') }}</h4>
 
               <form @submit.prevent="submit">
                 <!-- USERNAME -->
+                <label class="form-label small" for="username">{{ t('auth.username') }}</label>
                 <input
+                  id="username"
                   type="text"
                   class="form-control mb-2"
-                  placeholder="Usuário"
                   autocomplete="username"
                   v-model="username"
                   :disabled="loading"
                 />
 
                 <!-- PASSWORD -->
+                <label class="form-label small" for="password">{{ t('auth.password') }}</label>
                 <input
+                  id="password"
                   type="password"
                   class="form-control mb-2"
-                  placeholder="Senha"
                   autocomplete="current-password"
                   v-model="password"
                   :disabled="loading"
                 />
 
                 <!-- SUBMIT -->
-                <button class="btn btn-primary w-100" type="submit" :disabled="loading">
-                  {{ loading ? 'Entrando...' : 'Entrar' }}
+                <button class="btn btn-primary w-100 mt-2" type="submit" :disabled="loading">
+                  {{ loading ? t('auth.signingIn') : t('auth.signIn') }}
                 </button>
               </form>
 
@@ -49,11 +51,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 
 /* ======================
    ROUTER / STORE
 ====================== */
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()

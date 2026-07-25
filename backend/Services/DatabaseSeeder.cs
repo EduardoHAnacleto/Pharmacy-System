@@ -39,6 +39,7 @@ namespace PharmacyWorkerAPI.Services
             {
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+                await SeedStoreSettingsAsync(scope.ServiceProvider, context, logger, ct);
                 await SeedCategoriesAsync(context, logger, ct);
                 await SeedAdminUserAsync(scope.ServiceProvider, context, logger, ct);
             }
@@ -49,6 +50,71 @@ namespace PharmacyWorkerAPI.Services
                     "Database seeding failed. If this is a fresh deployment, check that "
                     + "migrations have been applied by the migrator service.");
             }
+        }
+
+        // ===============================
+        // STORE SETTINGS
+        // ===============================
+
+        /// <summary>
+        /// Creates the single configuration row, once.
+        /// </summary>
+        /// <remarks>
+        /// The initial values come from <c>Store:*</c> configuration when present,
+        /// so a fresh deployment for a new shop can arrive with its own name and
+        /// currency already set from the environment instead of the operator having
+        /// to open the admin screen before the site is presentable.
+        /// <para>
+        /// Only ever inserts. Restarting the container must not undo edits an
+        /// operator has since made in the admin screen.
+        /// </para>
+        /// </remarks>
+        private static async Task SeedStoreSettingsAsync(
+            IServiceProvider services, AppDbContext context, ILogger logger, CancellationToken ct)
+        {
+            if (await context.StoreSettings.AnyAsync(ct))
+                return;
+
+            var configuration = services.GetRequiredService<IConfiguration>();
+            var settings = new StoreSettings { Id = 1 };
+
+            var name = configuration["Store:Name"];
+            if (!string.IsNullOrWhiteSpace(name))
+                settings.StoreName = name;
+
+            var currency = configuration["Store:Currency"];
+            if (!string.IsNullOrWhiteSpace(currency))
+                settings.Currency = currency.ToUpperInvariant();
+
+            var locale = configuration["Store:Locale"];
+            if (!string.IsNullOrWhiteSpace(locale))
+                settings.Locale = locale;
+
+            var country = configuration["Store:CountryCode"];
+            if (!string.IsNullOrWhiteSpace(country))
+                settings.CountryCode = country.ToUpperInvariant();
+
+            var timeZone = configuration["Store:TimeZone"];
+            if (!string.IsNullOrWhiteSpace(timeZone))
+                settings.TimeZone = timeZone;
+
+            var whatsApp = configuration["Store:WhatsAppNumber"];
+            if (!string.IsNullOrWhiteSpace(whatsApp))
+                settings.WhatsAppNumber = whatsApp;
+
+            // No built-in default: a shop's logo is its own. The existing pharmacy's
+            // artwork ships in the frontend's public directory, so setting this to
+            // /logoFarma.png restores exactly what it had.
+            var logoUrl = configuration["Store:LogoUrl"];
+            if (!string.IsNullOrWhiteSpace(logoUrl))
+                settings.LogoUrl = logoUrl;
+
+            settings.UpdatedAt = DateTime.UtcNow;
+
+            context.StoreSettings.Add(settings);
+            await context.SaveChangesAsync(ct);
+
+            logger.LogInformation("Seeded store settings for {StoreName}.", settings.StoreName);
         }
 
         // ===============================

@@ -105,6 +105,20 @@ services:
       AdminSeed__Username: ${ADMIN_SEED_USERNAME}
       AdminSeed__Password: ${ADMIN_SEED_PASSWORD}
       AdminSeed__Email: ${ADMIN_SEED_EMAIL:-}
+      # Initial store_settings row, written once while the table is empty, so a new
+      # deployment arrives presentable. After that the admin screen owns these —
+      # changing them here has no effect.
+      Store__Name: ${STORE_NAME:-}
+      Store__Currency: ${STORE_CURRENCY:-}
+      Store__Locale: ${STORE_LOCALE:-}
+      Store__CountryCode: ${STORE_COUNTRY_CODE:-}
+      Store__TimeZone: ${STORE_TIME_ZONE:-}
+      Store__WhatsAppNumber: ${STORE_WHATSAPP_NUMBER:-}
+      Store__LogoUrl: ${STORE_LOGO_URL:-}
+      # Traces and metrics are exported only when a collector is configured;
+      # instrumentation runs either way.
+      OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-}
+      OpenTelemetry__ServiceName: ${OTEL_SERVICE_NAME:-storefront-api}
     volumes:
       # Uploaded promotion images. Without this the container filesystem is
       # discarded on every rebuild and the database is left pointing at

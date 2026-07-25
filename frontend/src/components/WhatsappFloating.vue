@@ -1,12 +1,38 @@
 <template>
   <a
-    href="https://wa.me/641111111111?text=Olá,%20gostaria%20de%20mais%20informações"
+    v-if="href"
+    :href="href"
     target="_blank"
+    rel="noopener"
     class="whatsapp-float"
+    :aria-label="t('contact.whatsapp')"
   >
-    <i class="bi bi-whatsapp"></i>
+    <i class="bi bi-whatsapp" aria-hidden="true"></i>
   </a>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useSettingsStore } from '@/stores/settings'
+
+const { t } = useI18n()
+const settings = useSettingsStore()
+
+/**
+ * Nothing is rendered when the shop has no WhatsApp number.
+ *
+ * The number used to be hardcoded here — and to a different number than the one
+ * the checkout used, so the two contradicted each other. A button that opens an
+ * empty chat is worse than no button.
+ */
+const href = computed(() => {
+  const number = settings.whatsAppNumber
+  if (!number) return null
+
+  return `https://wa.me/${number}?text=${encodeURIComponent(t('contact.whatsappGreeting'))}`
+})
+</script>
 
 <style scoped>
 .whatsapp-float {

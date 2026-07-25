@@ -1,38 +1,49 @@
 <template>
   <section class="py-5">
     <div class="container px-4 px-lg-5">
-      <h2 class="fw-bolder mb-4">Pagamento</h2>
+      <h2 class="fw-bolder mb-4">{{ t('checkout.title') }}</h2>
 
       <div class="row">
         <!-- PAYMENT -->
         <div class="col-lg-7">
           <div class="card mb-4">
             <div class="card-body">
-              <h5 class="mb-3">Forma de Pagamento</h5>
+              <h5 class="mb-3">{{ t('checkout.paymentMethod') }}</h5>
 
-              <select v-model="checkout.paymentMethod" class="form-select mb-3">
-                <option disabled value="">Selecione</option>
-                <option value="onDelivery">Na entrega</option>
-                <option value="pix">Pix</option>
+              <label class="visually-hidden" for="payment-method">
+                {{ t('checkout.paymentMethod') }}
+              </label>
+              <select id="payment-method" v-model="checkout.paymentMethod" class="form-select mb-3">
+                <option disabled value="">{{ t('common.select') }}</option>
+                <option value="onDelivery">{{ t('checkout.onDelivery') }}</option>
+                <option value="pix">{{ t('checkout.pix') }}</option>
               </select>
 
               <!-- PAYMENT BY HAND -->
               <div v-if="checkout.paymentMethod === 'onDelivery'">
-                <h5 class="mb-3">
-                  Pedidos para entrega após as 18 horas serão realizadas no próximo dia.
-                </h5>
-                <select v-model="checkout.deliveryPaymentType" class="form-select mb-3">
-                  <option disabled value="">Selecione</option>
-                  <option value="credit">Cartão de Crédito</option>
-                  <option value="debit">Cartão de Débito</option>
-                  <option value="cash">Dinheiro</option>
+                <p class="text-muted small">{{ t('checkout.afterHoursNotice') }}</p>
+
+                <label class="visually-hidden" for="delivery-payment">
+                  {{ t('checkout.paymentMethod') }}
+                </label>
+                <select
+                  id="delivery-payment"
+                  v-model="checkout.deliveryPaymentType"
+                  class="form-select mb-3"
+                >
+                  <option disabled value="">{{ t('common.select') }}</option>
+                  <option value="credit">{{ t('checkout.creditCard') }}</option>
+                  <option value="debit">{{ t('checkout.debitCard') }}</option>
+                  <option value="cash">{{ t('checkout.cash') }}</option>
                 </select>
 
                 <div v-if="checkout.deliveryPaymentType === 'cash'" class="mb-3">
-                  <label class="form-label">Troco para quanto?</label>
+                  <label class="form-label" for="change-for">{{ t('checkout.changeFor') }}</label>
                   <input
+                    id="change-for"
                     v-model.number="checkout.cashChangeFor"
                     type="number"
+                    min="0"
                     class="form-control"
                   />
                 </div>
@@ -41,32 +52,35 @@
               <!-- CUSTOMER DATA -->
               <div class="card mb-4">
                 <div class="card-body">
-                  <h5 class="mb-3">Dados do Cliente</h5>
+                  <h5 class="mb-3">{{ t('checkout.customerData') }}</h5>
 
                   <!-- NAME -->
                   <div class="mb-3">
-                    <label class="form-label">Nome completo</label>
+                    <label class="form-label" for="full-name">{{ t('checkout.fullName') }}</label>
                     <input
+                      id="full-name"
                       v-model="checkout.fullName"
                       type="text"
                       class="form-control"
                       :class="{ 'is-invalid': nameError }"
-                      placeholder="Digite seu nome completo"
+                      :placeholder="t('checkout.fullNamePlaceholder')"
+                      autocomplete="name"
                     />
                     <div v-if="nameError" class="invalid-feedback">
                       {{ nameError }}
                     </div>
                   </div>
 
-                  <!-- CPF -->
-                  <div>
-                    <label class="form-label">CPF</label>
+                  <!-- TAX ID -->
+                  <div v-if="checkout.collectTaxId">
+                    <label class="form-label" for="tax-id">{{ t('checkout.taxId') }}</label>
                     <input
+                      id="tax-id"
                       v-model="checkout.cpf"
                       type="text"
                       class="form-control"
                       :class="{ 'is-invalid': cpfError }"
-                      placeholder="000.000.000-00"
+                      :placeholder="t('checkout.taxIdPlaceholder')"
                     />
                     <div v-if="cpfError" class="invalid-feedback">
                       {{ cpfError }}
@@ -78,30 +92,68 @@
               <!-- ADDRESS -->
               <div v-if="cart.deliveryType === 'delivery'" class="card mb-4">
                 <div class="card-body">
-                  <h5 class="mb-3">Endereço de Entrega</h5>
+                  <h5 class="mb-3">{{ t('checkout.deliveryAddress') }}</h5>
 
-                  <input v-model="checkout.street" class="form-control mb-2" placeholder="Rua" />
-                  <input v-model="checkout.number" class="form-control mb-2" placeholder="Número" />
+                  <label class="form-label" for="street">{{ t('checkout.street') }}</label>
                   <input
+                    id="street"
+                    v-model="checkout.street"
+                    class="form-control mb-2"
+                    autocomplete="address-line1"
+                  />
+
+                  <label class="form-label" for="number">{{ t('checkout.number') }}</label>
+                  <input id="number" v-model="checkout.number" class="form-control mb-2" />
+
+                  <label class="form-label" for="neighborhood">
+                    {{ t('checkout.neighborhood') }}
+                  </label>
+                  <input
+                    id="neighborhood"
                     v-model="checkout.neighborhood"
                     class="form-control mb-2"
-                    placeholder="Bairro"
+                    autocomplete="address-level2"
                   />
-                  <input v-model="checkout.cep" class="form-control mb-2" placeholder="CEP" />
-                  <input
-                    v-model="checkout.complement"
-                    class="form-control"
-                    placeholder="Complemento"
-                  />
+
+                  <!-- CITY -->
+                  <div v-if="cities.length > 1" class="mb-2">
+                    <label class="form-label" for="city">{{ t('checkout.city') }}</label>
+                    <select id="city" v-model="checkout.city" class="form-select">
+                      <option disabled value="">{{ t('common.select') }}</option>
+                      <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
+                    </select>
+                  </div>
+
+                  <p v-else-if="checkout.city" class="small text-muted mb-2">
+                    {{ t('checkout.city') }}: {{ checkout.city }}
+                  </p>
+
+                  <small
+                    v-if="checkout.showErrors && !checkout.isCityAllowed"
+                    class="text-danger d-block mb-2"
+                  >
+                    {{ t('checkout.cityNotServed') }}
+                  </small>
+
+                  <template v-if="checkout.collectPostalCode">
+                    <label class="form-label" for="postal-code">
+                      {{ t('checkout.postalCode') }}
+                    </label>
+                    <input
+                      id="postal-code"
+                      v-model="checkout.cep"
+                      class="form-control mb-2"
+                      autocomplete="postal-code"
+                    />
+                  </template>
+
+                  <label class="form-label" for="complement">{{ t('checkout.complement') }}</label>
+                  <input id="complement" v-model="checkout.complement" class="form-control" />
                 </div>
               </div>
-              <!-- PIX -->
-              <!--<div v-if="checkout.paymentMethod === 'pix'" class="alert alert-info">
-                Você será redirecionado para o pagamento via Pix após a confirmação.
-              </div>-->
 
               <small v-if="checkout.showErrors && !isPaymentValid" class="text-danger d-block mt-2">
-                Selecione corretamente a forma de pagamento.
+                {{ t('checkout.paymentInvalid') }}
               </small>
             </div>
           </div>
@@ -110,7 +162,7 @@
         <!-- SUMMARY -->
         <div class="col-lg-5">
           <div class="card p-3 shadow-sm">
-            <h5 class="mb-3">Resumo do Pedido</h5>
+            <h5 class="mb-3">{{ t('checkout.orderSummary') }}</h5>
 
             <ul class="list-unstyled small mb-3">
               <li v-for="item in cart.items" :key="item.id">
@@ -121,38 +173,56 @@
             <hr />
 
             <div class="d-flex justify-content-between">
-              <span>Total</span>
-              <strong>R$ {{ cart.finalTotal.toFixed(2) }}</strong>
+              <span>{{ t('common.total') }}</span>
+              <strong>{{ formatMoney(cart.finalTotal) }}</strong>
             </div>
 
             <button class="btn btn-success w-100 mt-3" @click="openConfirmation">
-              Confirmar Pedido
+              {{ t('checkout.confirmOrder') }}
             </button>
+
+            <small v-if="!whatsAppNumber" class="text-danger d-block mt-2">
+              {{ t('checkout.unavailable') }}
+            </small>
           </div>
         </div>
       </div>
     </div>
 
     <!-- MODAL CONFIRM -->
-    <div v-if="showModal" class="modal fade show" style="display: block" tabindex="-1">
+    <div
+      v-if="showModal"
+      class="modal fade show"
+      style="display: block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+      @keydown.esc="showModal = false"
+    >
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Confirmar Pedido</h5>
-            <button class="btn-close" @click="showModal = false"></button>
+            <h5 class="modal-title" id="confirm-title">{{ t('checkout.confirmOrder') }}</h5>
+            <button
+              class="btn-close"
+              :aria-label="t('common.cancel')"
+              @click="showModal = false"
+            ></button>
           </div>
 
           <div class="modal-body">
-            <p>
-              Deseja confirmar o envio do pedido? (Confirme e envie a mensagem do WhatsApp que
-              aparecerá)
-            </p>
-            <p class="fw-bold">Total: R$ {{ cart.finalTotal.toFixed(2) }}</p>
+            <p>{{ t('checkout.confirmBody') }}</p>
+            <p class="fw-bold">{{ t('common.total') }}: {{ formatMoney(cart.finalTotal) }}</p>
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn-secondary" @click="showModal = false">Cancelar</button>
-            <button class="btn btn-success" @click="confirmOrder">Confirmar</button>
+            <button class="btn btn-secondary" @click="showModal = false">
+              {{ t('common.cancel') }}
+            </button>
+            <button ref="confirmButton" class="btn btn-success" @click="confirmOrder">
+              {{ t('common.confirm') }}
+            </button>
           </div>
         </div>
       </div>
@@ -163,26 +233,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useCartStore } from '@/stores/cart'
 import { useCheckoutStore } from '@/stores/checkout'
+import { useSettingsStore } from '@/stores/settings'
 import { track } from '@/services/analytics'
+import { formatMoney } from '@/utils/format'
 import api from '@/services/api'
 
+const { t, locale } = useI18n()
 const cart = useCartStore()
 const checkout = useCheckoutStore()
+const settings = useSettingsStore()
 const router = useRouter()
 
 const showModal = ref(false)
+const confirmButton = ref<HTMLButtonElement | null>(null)
 const cpfError = ref('')
 const nameError = ref('')
 
-// Destination for the order handoff. Set VITE_WHATSAPP_NUMBER at build time
-// (docker-compose.yml passes it through as a build arg). Uses || rather than ??
-// so that an env var defined but left empty — the usual shape of an unset CI
-// variable — falls back instead of producing a wa.me link with no number.
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '5545999975299'
+const cities = computed(() => checkout.allowedCities)
+
+/**
+ * Destination for the order handoff, from the shop's own settings.
+ *
+ * Two different numbers used to be hardcoded in two components, and a
+ * VITE_WHATSAPP_NUMBER build arg that nothing read. One row in the database now
+ * decides it, and the button says so plainly when it is unset.
+ */
+const whatsAppNumber = computed(() => settings.whatsAppNumber)
+
+onMounted(() => {
+  checkout.applyDefaultCity()
+})
+
+// Settings may still be in flight on a direct navigation to /checkout.
+watch(
+  () => settings.loaded,
+  () => checkout.applyDefaultCity(),
+)
 
 /* =========================
    VALIDATIONS
@@ -208,22 +299,29 @@ function validateForm(): boolean {
   cpfError.value = ''
 
   if (!checkout.fullName || checkout.fullName.length < 5) {
-    nameError.value = 'Informe um nome válido'
+    nameError.value = t('checkout.nameInvalid')
     valid = false
   }
 
   // Single source of truth: the store getter. A second copy of the check-digit
   // algorithm here is how the two versions drifted apart in the first place.
+  // The getter also knows when the shop does not collect a tax id at all.
   if (!checkout.isCpfValid) {
-    cpfError.value = 'CPF inválido'
+    cpfError.value = t('checkout.taxIdInvalid')
+    valid = false
+  }
+
+  if (cart.deliveryType === 'delivery' && !checkout.isCityAllowed) {
     valid = false
   }
 
   return valid
 }
 
-function openConfirmation() {
+async function openConfirmation() {
   checkout.showErrors = true
+
+  if (!whatsAppNumber.value) return
 
   const formValid = validateForm()
   if (!formValid) return
@@ -234,79 +332,99 @@ function openConfirmation() {
   track('checkout_started')
 
   showModal.value = true
+
+  // Focus moves into the dialog so it is operable from the keyboard.
+  await nextTick()
+  confirmButton.value?.focus()
 }
 
 function getFormattedDateTime() {
   const now = new Date()
+  const tag = locale.value
 
-  const date = now.toLocaleDateString('pt-BR')
-  const time = now.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const date = new Intl.DateTimeFormat(tag, { dateStyle: 'short' }).format(now)
+  const time = new Intl.DateTimeFormat(tag, { timeStyle: 'short' }).format(now)
 
-  return `${date} às ${time}`
+  return `${date} ${time}`
 }
 
 async function confirmOrder() {
+  const number = whatsAppNumber.value
+  if (!number) return
+
   // Recorded before the handoff, and deliberately without the customer: name,
-  // CPF, postcode and address stay in this browser and in the WhatsApp message
+  // tax id, postcode and address stay in this browser and in the WhatsApp message
   // below. The API has no field for them.
   const orderNumber = await recordOrder()
 
-  const itens = cart.items
-    .map((i) => `• ${i.name} x${i.quantity} — R$ ${(i.price * i.quantity).toFixed(2)}`)
+  const items = cart.items
+    .map((i) => `• ${i.name} x${i.quantity} — ${formatMoney(i.price * i.quantity)}`)
     .join('\n')
 
   const isDelivery = cart.deliveryType === 'delivery'
 
-  const endereco = isDelivery
+  const address = isDelivery
     ? [
-        '📍 *Endereço de Entrega*',
-        checkout.street && `Rua: ${checkout.street}`,
-        checkout.number && `Número: ${checkout.number}`,
-        checkout.neighborhood && `Bairro: ${checkout.neighborhood}`,
-        checkout.cep && `CEP: ${checkout.cep}`,
+        `📍 *${t('checkout.deliveryAddress')}*`,
+        checkout.street && `${t('checkout.street')}: ${checkout.street}`,
+        checkout.number && `${t('checkout.number')}: ${checkout.number}`,
+        checkout.neighborhood && `${t('checkout.neighborhood')}: ${checkout.neighborhood}`,
+        checkout.city && `${t('checkout.city')}: ${checkout.city}`,
+        checkout.collectPostalCode &&
+          checkout.cep &&
+          `${t('checkout.postalCode')}: ${checkout.cep}`,
       ]
         .filter(Boolean)
         .join('\n')
-    : '📦 *Retirada no local*'
+    : `📦 *${t('cart.pickup')}*`
 
-  const pagamento =
+  const payment =
     checkout.paymentMethod === 'pix'
-      ? 'Pix'
-      : `Na entrega (${checkout.deliveryPaymentType})${
+      ? t('checkout.pix')
+      : `${t('checkout.onDelivery')} (${paymentTypeLabel()})${
           checkout.deliveryPaymentType === 'cash'
-            ? ` - Troco para R$ ${checkout.cashChangeFor}`
+            ? ` - ${t('checkout.changeFor')} ${formatMoney(checkout.cashChangeFor ?? 0)}`
             : ''
         }`
 
-  const orderDateTime = getFormattedDateTime()
+  const taxIdLine = checkout.collectTaxId ? `\n🧾 ${t('checkout.taxId')}: ${checkout.cpf}` : ''
 
   const message = `
-🛒 *NOVO PEDIDO*${orderNumber ? ` #${orderNumber}` : ''}
-🕒 ${orderDateTime}
+🛒 *${settings.settings.storeName}*${orderNumber ? ` #${orderNumber}` : ''}
+🕒 ${getFormattedDateTime()}
 
-👤 Nome: ${checkout.fullName}
-🧾 CPF: ${checkout.cpf}
+👤 ${t('checkout.fullName')}: ${checkout.fullName}${taxIdLine}
 
-${endereco}
+${address}
 
-📦 *Itens:*
-${itens}
+📦 *${t('cart.products')}:*
+${items}
 
-💳 Pagamento: ${pagamento}
-💰 Total: R$ ${cart.finalTotal.toFixed(2)}
+💳 ${t('checkout.paymentMethod')}: ${payment}
+💰 ${t('common.total')}: ${formatMoney(cart.finalTotal)}
   `.trim()
 
   track('whatsapp_click')
 
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank')
+  window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, '_blank')
 
   cart.clearCart()
   checkout.reset()
   showModal.value = false
   router.push('/')
+}
+
+function paymentTypeLabel(): string {
+  switch (checkout.deliveryPaymentType) {
+    case 'credit':
+      return t('checkout.creditCard')
+    case 'debit':
+      return t('checkout.debitCard')
+    case 'cash':
+      return t('checkout.cash')
+    default:
+      return ''
+  }
 }
 
 /**

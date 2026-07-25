@@ -1,9 +1,19 @@
 import { defineStore } from 'pinia'
+import { useSettingsStore } from '@/stores/settings'
 
 export type DeliveryType = 'pickup' | 'delivery'
 export type PaymentMethod = 'pix' | 'onDelivery'
 export type DeliveryPaymentType = 'credit' | 'debit' | 'cash'
 
+/**
+ * The checkout form.
+ *
+ * Everything in this store stays in the browser. The customer's name, tax id,
+ * postcode and address are placed in the WhatsApp message and never sent to the
+ * API — there is no field for them in any request, and no column for them in the
+ * database. Only the delivery city is reported, because a sales report split by
+ * city is useful and a city is not a person.
+ */
 export const useCheckoutStore = defineStore('checkout', {
   state: () => ({
     // GERAL CONTROL
@@ -28,12 +38,35 @@ export const useCheckoutStore = defineStore('checkout', {
     complement: '',
 
     // CITY CONTROL
-    allowedCity: 'Santa Terezinha de Itaipu',
-    city: 'Santa Terezinha de Itaipu',
+    city: '',
   }),
 
   getters: {
+    /**
+     * Cities the shop delivers to.
+     *
+     * Replaces the single `allowedCity: 'Santa Terezinha de Itaipu'` that used to
+     * be written into this store — which no shop could change and which quietly
+     * blocked delivery for every other one.
+     */
+    allowedCities(): string[] {
+      return useSettingsStore().deliveryCities
+    },
+
+    /** Whether the tax id field is collected at all, per shop settings. */
+    collectTaxId(): boolean {
+      return useSettingsStore().settings.collectTaxId
+    },
+
+    collectPostalCode(): boolean {
+      return useSettingsStore().settings.collectPostalCode
+    },
+
     isCpfValid(): boolean {
+      // Nothing to validate when the shop does not ask for it — a shop outside
+      // Brazil must not be blocked by a check digit that has no meaning there.
+      if (!this.collectTaxId) return true
+
       if (!this.cpf) return false
 
       const cpf = this.cpf.replace(/\D/g, '')
@@ -63,8 +96,21 @@ export const useCheckoutStore = defineStore('checkout', {
       return true
     },
 
+    /**
+     * Whether the chosen city is served.
+     *
+     * A shop that lists no cities is treated as unrestricted rather than as
+     * serving nowhere: refusing every order is the worse failure mode for a shop
+     * that simply has not filled the field in.
+     */
     isCityAllowed(): boolean {
-      return this.city === this.allowedCity
+      const allowed = this.allowedCities
+
+      if (allowed.length === 0) return true
+
+      return allowed.some(
+        (c) => c.localeCompare(this.city, undefined, { sensitivity: 'base' }) === 0,
+      )
     },
 
     isPickupValid(): boolean {
@@ -76,7 +122,7 @@ export const useCheckoutStore = defineStore('checkout', {
         this.fullName.trim().length > 0 &&
         this.isCpfValid &&
         this.isCityAllowed &&
-        this.cep.trim().length > 0 &&
+        (!this.collectPostalCode || this.cep.trim().length > 0) &&
         this.neighborhood.trim().length > 0 &&
         this.street.trim().length > 0 &&
         this.number.trim().length > 0
@@ -89,6 +135,20 @@ export const useCheckoutStore = defineStore('checkout', {
   },
 
   actions: {
+    /**
+     * Preselects the city when the shop serves exactly one.
+     *
+     * With a single service city there is nothing to choose, so asking is friction;
+     * with several the checkout renders a picker instead.
+     */
+    applyDefaultCity() {
+      const allowed = this.allowedCities
+
+      if (!this.city && allowed.length === 1) {
+        this.city = allowed[0]!
+      }
+    },
+
     reset() {
       this.deliveryType = 'pickup'
       this.showErrors = false
@@ -105,6 +165,7 @@ export const useCheckoutStore = defineStore('checkout', {
       this.street = ''
       this.number = ''
       this.complement = ''
+      this.city = ''
     },
   },
 })

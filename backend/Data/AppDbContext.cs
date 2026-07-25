@@ -18,6 +18,7 @@ namespace PharmacyWorkerAPI.Data
         public DbSet<AnalyticsDaily> AnalyticsDaily { get; set; } = null!;
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<OrderItem> OrderItems { get; set; } = null!;
+        public DbSet<StoreSettings> StoreSettings { get; set; } = null!;
 
         // Column facets below are not decoration: this model is now the source of
         // truth for the schema. Left unconfigured, EF picks its own defaults —
@@ -196,6 +197,43 @@ namespace PharmacyWorkerAPI.Data
                 entity.HasIndex(e => e.OccurredAt).HasDatabaseName("ix_audit_log_occurred");
                 entity.HasIndex(e => new { e.EntityType, e.EntityId })
                       .HasDatabaseName("ix_audit_log_entity");
+            });
+
+            modelBuilder.Entity<StoreSettings>(entity =>
+            {
+                entity.ToTable("store_settings");
+
+                // No identity column: the row's key is a constant, so the seeder can
+                // insert it with Id 1 and every later write is an update of that row.
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedNever();
+
+                entity.Property(e => e.StoreName).HasMaxLength(100);
+                entity.Property(e => e.Tagline).HasMaxLength(200);
+                entity.Property(e => e.LogoUrl).HasMaxLength(255);
+                entity.Property(e => e.PrimaryColor).HasMaxLength(20);
+                entity.Property(e => e.SecondaryColor).HasMaxLength(20);
+                entity.Property(e => e.Address).HasMaxLength(200);
+                entity.Property(e => e.City).HasMaxLength(100);
+                entity.Property(e => e.CountryCode).HasMaxLength(2).IsFixedLength();
+                entity.Property(e => e.TimeZone).HasMaxLength(64);
+                entity.Property(e => e.MapQuery).HasMaxLength(200);
+                entity.Property(e => e.Phone).HasMaxLength(30);
+                entity.Property(e => e.WhatsAppNumber).HasMaxLength(20);
+                entity.Property(e => e.Email).HasMaxLength(150);
+                entity.Property(e => e.InstagramUrl).HasMaxLength(255);
+                entity.Property(e => e.FacebookUrl).HasMaxLength(255);
+                entity.Property(e => e.Currency).HasMaxLength(3).IsFixedLength();
+                entity.Property(e => e.Locale).HasMaxLength(10);
+                entity.Property(e => e.DeliveryFee).HasPrecision(10, 2);
+                entity.Property(e => e.MinDeliveryTotal).HasPrecision(10, 2);
+                entity.Property(e => e.DeliveryCities).HasMaxLength(500);
+                entity.Property(e => e.FooterText).HasMaxLength(300);
+
+                // Opening hours are a small JSON document read whole and never
+                // filtered on, so text is the right storage and MySQL's json type
+                // would only add validation the API already performs.
+                entity.Property(e => e.OpeningHours).HasColumnType("text");
             });
 
             modelBuilder.Entity<Category>(entity =>

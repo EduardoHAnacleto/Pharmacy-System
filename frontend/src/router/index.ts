@@ -26,6 +26,11 @@ const router = createRouter({
       component: () => import('@/views/CheckoutView.vue'),
     },
     {
+      path: '/privacy',
+      name: 'privacy',
+      component: () => import('@/views/PrivacyView.vue'),
+    },
+    {
       path: '/login',
       component: () => import('@/views/AdminLoginView.vue'),
     },
@@ -40,6 +45,17 @@ const router = createRouter({
       name: 'insights',
       component: () => import('@/views/InsightsView.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/admin/settings',
+      name: 'admin-settings',
+      component: () => import('@/views/AdminSettingsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    // Anything else is the storefront, not a blank page.
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/',
     },
   ],
 })

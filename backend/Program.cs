@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -5,6 +6,10 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using PharmacyWorkerAPI.Data;
 using PharmacyWorkerAPI.Hubs;
 using PharmacyWorkerAPI.Infrastructure;
@@ -78,7 +83,47 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Storefront API",
+        Version = "v1",
+        Description =
+            "Promotion storefront with WhatsApp order handoff. Reads are public; "
+            + "writes require an Admin bearer token. No personal customer data is "
+            + "accepted or stored by any endpoint.",
+    });
+
+    // Pulls the ///-comments through, so the generated reference carries the
+    // reasoning that lives next to the code rather than a list of bare routes.
+    var xmlPath = Path.Combine(
+        AppContext.BaseDirectory,
+        $"{Assembly.GetExecutingAssembly().GetName().Name}.xml");
+
+    if (File.Exists(xmlPath))
+        options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+
+    // Lets the Swagger UI exercise the authenticated endpoints, which is the
+    // difference between documentation and a usable console.
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Paste the accessToken returned by POST /api/v1/auth/login.",
+    });
+
+    // Referenced by id rather than by a second inline definition, and built from a
+    // factory taking the document: Microsoft.OpenApi 2.x resolves references against
+    // the host document, so the requirement cannot be constructed before it exists.
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = [],
+    });
+});
 
 // Problem details for both thrown exceptions and framework-produced responses.
 builder.Services.AddProblemDetails();
@@ -96,10 +141,55 @@ builder.Services.AddScoped<IAuditLogger, AuditLogger>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IExportService, ExportService>();
+builder.Services.AddScoped<IStoreSettingsService, StoreSettingsService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddSingleton<IPromotionImageStorage, PromotionImageStorage>();
 
 // Records status transitions and reconciles missing image files.
 builder.Services.AddHostedService<PromotionMaintenanceService>();
+
+// ===============================
+// OBSERVABILITY
+// ===============================
+// Traces and metrics for requests and outbound calls. Serilog already answers
+// "what happened"; this answers "where did the time go", which is the question a
+// slow storefront actually raises.
+//
+// Exported over OTLP only when an endpoint is configured. Without one the
+// instrumentation still runs and costs almost nothing, so there is no separate
+// build or code path for a deployment that has no collector — which is every
+// deployment until someone stands one up.
+var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"];
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(
+        serviceName: builder.Configuration["OpenTelemetry:ServiceName"] ?? "storefront-api",
+        serviceVersion: Assembly.GetExecutingAssembly().GetName().Version?.ToString()))
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation(options =>
+            {
+                // Health probes would otherwise dominate the trace volume while
+                // saying nothing about the application.
+                options.Filter = context =>
+                    !context.Request.Path.StartsWithSegments("/health");
+            })
+            .AddHttpClientInstrumentation();
+
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+            tracing.AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint));
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation();
+
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+            metrics.AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint));
+    });
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

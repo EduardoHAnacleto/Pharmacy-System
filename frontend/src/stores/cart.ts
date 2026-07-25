@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useSettingsStore } from '@/stores/settings'
 
 export interface CartItem {
   id: number
@@ -35,8 +36,6 @@ export const useCartStore = defineStore('cart', {
   state: () => ({
     items: [] as CartItem[],
     deliveryType: 'pickup' as DeliveryType,
-    deliveryFee: 8,
-    minDeliveryTotal: 30,
     expiresAt: 0,
   }),
 
@@ -46,8 +45,32 @@ export const useCartStore = defineStore('cart', {
     productsTotal: (state) =>
       state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
 
+    /**
+     * The shop's delivery fee.
+     *
+     * Read from settings rather than the literal 8 that used to sit in this
+     * state: a fee written into the frontend cannot be changed by the shop that
+     * charges it, and is meaningless for any other shop.
+     */
+    deliveryFee(): number {
+      return useSettingsStore().settings.deliveryFee
+    },
+
+    minDeliveryTotal(): number {
+      return useSettingsStore().settings.minDeliveryTotal
+    },
+
+    /** Fulfilment options the shop actually offers. */
+    deliveryEnabled(): boolean {
+      return useSettingsStore().settings.deliveryEnabled
+    },
+
+    pickupEnabled(): boolean {
+      return useSettingsStore().settings.pickupEnabled
+    },
+
     canDeliver(): boolean {
-      return this.productsTotal >= this.minDeliveryTotal
+      return this.deliveryEnabled && this.productsTotal >= this.minDeliveryTotal
     },
 
     finalTotal(): number {

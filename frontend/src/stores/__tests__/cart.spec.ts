@@ -1,8 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useCartStore } from '@/stores/cart'
+import { useSettingsStore } from '@/stores/settings'
 
 const STORAGE_KEY = 'cart-storage'
+
+/**
+ * The fee and minimum are the shop's, not the frontend's.
+ *
+ * These used to be literals in the cart store, so this helper reproduces the old
+ * pharmacy's numbers and the assertions below stay unchanged — which is the point:
+ * moving them into configuration must not change behaviour for the shop already
+ * running on them.
+ */
+function configureShop(
+  overrides: Partial<{ fee: number; minimum: number; delivery: boolean; pickup: boolean }> = {},
+) {
+  const settings = useSettingsStore()
+
+  settings.settings.deliveryFee = overrides.fee ?? 8
+  settings.settings.minDeliveryTotal = overrides.minimum ?? 30
+  settings.settings.deliveryEnabled = overrides.delivery ?? true
+  settings.settings.pickupEnabled = overrides.pickup ?? true
+  settings.loaded = true
+
+  return settings
+}
 
 function item(overrides: Partial<{ id: number; name: string; price: number }> = {}) {
   return {
@@ -18,6 +41,7 @@ describe('cart store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    configureShop()
   })
 
   describe('totals', () => {
@@ -64,6 +88,29 @@ describe('cart store', () => {
 
       expect(cart.canDeliver).toBe(true)
       expect(cart.finalTotal).toBe(38)
+    })
+
+    it('follows the shop that configured it', () => {
+      // The same cart, a different shop: NZ$12 over a NZ$50 minimum.
+      configureShop({ fee: 12, minimum: 50 })
+
+      const cart = useCartStore()
+      cart.addItem(item({ price: 60 }))
+      cart.deliveryType = 'delivery'
+
+      expect(cart.canDeliver).toBe(true)
+      expect(cart.finalTotal).toBe(72)
+    })
+
+    it('never charges delivery for a shop that does not deliver', () => {
+      configureShop({ delivery: false })
+
+      const cart = useCartStore()
+      cart.addItem(item({ price: 100 }))
+      cart.deliveryType = 'delivery'
+
+      expect(cart.canDeliver).toBe(false)
+      expect(cart.finalTotal).toBe(100)
     })
 
     it('reports zero for an empty cart', () => {

@@ -181,6 +181,7 @@ import {
   getSales,
   listExportDatasets,
 } from '@/services/insightsService'
+import { formatMoney, formatPercent } from '@/utils/format'
 import type {
   Funnel,
   OperationalAlert,
@@ -237,13 +238,10 @@ const funnelSteps = computed(() => [
   { label: 'Pedidos registrados', value: funnel.value.orders, rate: null },
 ])
 
-function percent(rate: number): string {
-  return `${(rate * 100).toFixed(1)}%`
-}
-
-function money(value: number): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
-}
+// Formatting follows the shop's own locale and currency; the dashboard used to
+// hardcode pt-BR and BRL, which reported a New Zealand shop's revenue in reais.
+const percent = formatPercent
+const money = formatMoney
 
 async function load() {
   loading.value = true
