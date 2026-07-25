@@ -58,6 +58,9 @@ backend/.vs/
 *.sqlite
 *.sqlite3
 
+# Backup artefacts produced by scripts/backup.sh
+backups/
+
 # Docker volumes (if stored locally)
 docker-volumes/
 

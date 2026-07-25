@@ -16,10 +16,11 @@ services:
     # Not published to the host: the database is only reachable from the
     # internal pharmacy_network. Use `docker compose exec db mysql ...` for
     # maintenance, or docker-compose.dev.yml to expose it locally.
+    # No entrypoint init scripts: the schema is owned by EF Core migrations,
+    # applied by the migrator service. Entrypoint scripts only ever ran against
+    # an empty volume, which made schema changes impossible after first boot.
     volumes:
       - db_data:/var/lib/mysql
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
     healthcheck:
       test:
         [
@@ -57,11 +58,31 @@ services:
       - pharmacy_network
 
   # ==========================
+  # MIGRATOR (runs once, then exits)
+  # ==========================
+  migrator:
+    build:
+      context: ./backend
+      target: migrator
+    image: ghcr.io/eduardohanacleto/pharmacy-migrator:latest
+    container_name: pharmacy_migrator
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - --connection
+      - server=db;port=3306;database=${MYSQL_DATABASE};user=${MYSQL_USER};password=${MYSQL_PASSWORD}
+    networks:
+      - pharmacy_network
+
+  # ==========================
   # BACKEND (.NET API)
   # ==========================
   backend:
     build:
       context: ./backend
+      target: api
     image: ghcr.io/eduardohanacleto/pharmacy-backend:latest
     container_name: pharmacy_api
     restart: unless-stopped
@@ -70,6 +91,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Wait for the schema to be current before serving traffic.
+      migrator:
+        condition: service_completed_successfully
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: >-
@@ -77,7 +101,7 @@ services:
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
       Cors__AllowedOrigins: ${CORS_ALLOWED_ORIGINS}
       Jwt__SigningKey: ${JWT_SIGNING_KEY}
-      # Used only while the users table is empty; see AdminUserSeeder.
+      # Used only while the users table is empty; see DatabaseSeeder.
       AdminSeed__Username: ${ADMIN_SEED_USERNAME}
       AdminSeed__Password: ${ADMIN_SEED_PASSWORD}
       AdminSeed__Email: ${ADMIN_SEED_EMAIL:-}
@@ -86,6 +110,16 @@ services:
       # discarded on every rebuild and the database is left pointing at
       # image URLs that no longer resolve.
       - promotion_images:/app/wwwroot/images
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:80/health/ready || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - pharmacy_network
 
@@ -101,7 +135,8 @@ services:
     container_name: pharmacy_frontend
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "80:80"
     networks:

@@ -177,8 +177,10 @@ const cpfError = ref('')
 const nameError = ref('')
 
 // Destination for the order handoff. Set VITE_WHATSAPP_NUMBER at build time
-// (docker-compose.yml passes it through as a build arg).
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER ?? '5545999975299'
+// (docker-compose.yml passes it through as a build arg). Uses || rather than ??
+// so that an env var defined but left empty — the usual shape of an unset CI
+// variable — falls back instead of producing a wa.me link with no number.
+const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '5545999975299'
 
 /* =========================
    VALIDATIONS

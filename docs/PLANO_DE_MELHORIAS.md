@@ -1,7 +1,9 @@
 # Plano de Evolução — Pharmacy System → Plataforma de Vitrine On-line
 
-> Documento de planejamento. Nada neste plano foi implementado ainda.
 > Branch de trabalho: `claude/project-improvement-plan-d9iacl`
+>
+> **Estado:** Fases 0, 1 e 2 implementadas. Fases 3 a 8 pendentes.
+> Procedimentos operacionais em [`OPERACOES.md`](OPERACOES.md).
 
 ---
 
@@ -102,9 +104,9 @@ Nove fases. **Fases 0–2 são pré-requisito de tudo**: não faz sentido constr
 
 | Fase | Tema | Esforço | Entrega principal |
 |---|---|---|---|
-| [0](#fase-0--higiene-do-repositório-e-bugs-críticos) | Higiene do repo + bugs críticos | P | Repo limpo, deploy funcional em Linux, imagens que sobrevivem |
-| [1](#fase-1--autenticação-real) | Autenticação real | M | JWT, `[Authorize]` nas escritas, senha fora do bundle |
-| [2](#fase-2--configuração-migrations-e-cicd) | Config, migrations e CI/CD | M | EF Migrations, `.env.example`, GitHub Actions, health checks |
+| [0](#fase-0--higiene-do-repositório-e-bugs-críticos) ✅ | Higiene do repo + bugs críticos | P | Repo limpo, deploy funcional em Linux, imagens que sobrevivem |
+| [1](#fase-1--autenticação-real) ✅ | Autenticação real | M | JWT, `[Authorize]` nas escritas, senha fora do bundle |
+| [2](#fase-2--configuração-migrations-e-cicd) ✅ | Config, migrations e CI/CD | M | EF Migrations, `.env.example`, GitHub Actions, health checks |
 | [3](#fase-3--arquitetura-e-testes) | Arquitetura e testes | M–G | Camada de serviço, validação, Serilog, suíte de testes |
 | [4](#fase-4--modelo-de-dados-mídia-histórico-e-reativação) | **Mídia, histórico e reativação** | G | Biblioteca de anúncios, arquivar em vez de deletar, reativar promoção |
 | [5](#fase-5--analytics-pedidos-anônimos-e-exportação) | **Analytics, pedidos e exportação** | G | Funil, dashboard, pedidos anônimos, export CSV |

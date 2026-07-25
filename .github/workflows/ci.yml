@@ -28,9 +28,25 @@ jobs:
         run: dotnet restore
         working-directory: backend
 
+      # The project sets TreatWarningsAsErrors, so a new analyzer warning fails
+      # here rather than accumulating.
       - name: Build
         run: dotnet build --no-restore --configuration Release
         working-directory: backend
+
+      # A solution file sits next to the project, so the workspace is explicit.
+      - name: Format
+        run: dotnet format PharmacyWorkerAPI.csproj --no-restore --verify-no-changes
+        working-directory: backend
+
+      # Catches a model change committed without its migration, which would
+      # otherwise only surface when the migrator runs against a real database.
+      - name: Check for model changes without a migration
+        working-directory: backend
+        run: |
+          dotnet tool install --global dotnet-ef --version 9.* >/dev/null
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet ef migrations has-pending-model-changes --no-build
 
   frontend:
     name: Frontend

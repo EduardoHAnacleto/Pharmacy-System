@@ -1,4 +1,4 @@
-﻿namespace PharmacyWorkerAPI.DTOs.ItemPromotion
+namespace PharmacyWorkerAPI.DTOs.ItemPromotion
 {
     public class ItemPromotionCreateRequestDto
     {

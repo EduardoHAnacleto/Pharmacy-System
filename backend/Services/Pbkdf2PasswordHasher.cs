@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 
 namespace PharmacyWorkerAPI.Services
@@ -27,9 +28,11 @@ namespace PharmacyWorkerAPI.Services
             var salt = RandomNumberGenerator.GetBytes(SaltBytes);
             var hash = Derive(password, salt, DefaultIterations);
 
+            // Invariant culture: the iteration count is parsed back by Verify, so
+            // it must not be formatted with locale-specific digits or separators.
             return string.Join('$',
                 Prefix,
-                DefaultIterations.ToString(),
+                DefaultIterations.ToString(CultureInfo.InvariantCulture),
                 Convert.ToBase64String(salt),
                 Convert.ToBase64String(hash));
         }
@@ -43,8 +46,11 @@ namespace PharmacyWorkerAPI.Services
             if (parts.Length != 4 || parts[0] != Prefix)
                 return false;
 
-            if (!int.TryParse(parts[1], out var iterations) || iterations <= 0)
+            if (!int.TryParse(parts[1], CultureInfo.InvariantCulture, out var iterations)
+                || iterations <= 0)
+            {
                 return false;
+            }
 
             byte[] salt;
             byte[] expected;

@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -122,6 +123,12 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 });
 builder.Services.AddSingleton<RedisService>();
 
+// Health checks. "ready" is the gate for orchestration; "live" only reports that
+// the process is up, so a database blip does not trigger a restart loop.
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>("database", tags: ["ready"])
+    .AddCheck<RedisHealthCheck>("redis", tags: ["ready"]);
+
 // CORS
 builder.Services.AddCors(options =>
 {
@@ -191,6 +198,18 @@ app.MapControllers();
 app.MapHub<PromotionsHub>("/promotionsHub")
     .RequireCors("FrontendPolicy");
 
-await AdminUserSeeder.SeedAsync(app.Services);
+// Liveness: the process responds. Deliberately has no dependency checks.
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => false,
+});
+
+// Readiness: dependencies are usable.
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+});
+
+await DatabaseSeeder.SeedAsync(app.Services);
 
 app.Run();

@@ -20,7 +20,7 @@ RUN npm run build
 # =====================
 # RUNTIME
 # =====================
-FROM nginx:alpine
+FROM nginx:alpine AS runtime
 
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

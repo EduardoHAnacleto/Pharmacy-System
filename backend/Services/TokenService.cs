@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -31,9 +32,13 @@ namespace PharmacyWorkerAPI.Services
             // NameIdentifier is written as "nameid" and mapped back on validation,
             // so it also covers the subject. Emitting "sub" as well would produce a
             // duplicate NameIdentifier claim once the inbound map is applied.
+            // Invariant culture: the id claim is parsed back as an int on every
+            // authorized request.
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(
+                    ClaimTypes.NameIdentifier,
+                    user.Id.ToString(CultureInfo.InvariantCulture)),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role),
             };
