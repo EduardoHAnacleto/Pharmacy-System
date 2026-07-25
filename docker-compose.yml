@@ -76,6 +76,11 @@ services:
         server=db;port=3306;database=${MYSQL_DATABASE};user=${MYSQL_USER};password=${MYSQL_PASSWORD}
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
       Cors__AllowedOrigins: ${CORS_ALLOWED_ORIGINS}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY}
+      # Used only while the users table is empty; see AdminUserSeeder.
+      AdminSeed__Username: ${ADMIN_SEED_USERNAME}
+      AdminSeed__Password: ${ADMIN_SEED_PASSWORD}
+      AdminSeed__Email: ${ADMIN_SEED_EMAIL:-}
     volumes:
       # Uploaded promotion images. Without this the container filesystem is
       # discarded on every rebuild and the database is left pointing at

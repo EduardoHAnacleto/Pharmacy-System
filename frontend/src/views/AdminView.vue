@@ -116,12 +116,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePromotionsStore } from '@/stores/promotions'
 import type { PromotionCreatePayload } from '@/stores/promotions'
+import { useAuthStore } from '@/stores/auth'
 
 /* ======================
    ROUTER / STORE
 ====================== */
 const router = useRouter()
 const promotionsStore = usePromotionsStore()
+const authStore = useAuthStore()
 
 /* ======================
    FORM STATE
@@ -202,8 +204,6 @@ async function addPromotion() {
     isActive: isActive.value,
     categoryId: 1,
     productType: 'default',
-    createdByUserId: 0,
-    createdByUserName: 'Admin',
   }
 
   // Only clear the form when the promotion actually reached the server,
@@ -235,8 +235,10 @@ function resetForm() {
 /* ======================
    LOGOUT
 ====================== */
-function logout() {
-  localStorage.removeItem('admin_authenticated')
+async function logout() {
+  // Revokes the refresh token server-side as well, so the cookie cannot be
+  // replayed for a new session.
+  await authStore.logout()
   router.push('/login')
 }
 

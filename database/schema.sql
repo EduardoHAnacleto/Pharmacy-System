@@ -21,3 +21,32 @@ CREATE TABLE item_promotions (
     CONSTRAINT fk_item_promotions_category
         FOREIGN KEY (category_id) REFERENCES categories(id)
 );
+
+-- Admin operators. Staff accounts only: the system stores no customer
+-- accounts and no customer personal data.
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(150) NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'Admin',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_login_at DATETIME NULL,
+    CONSTRAINT uq_users_username UNIQUE (username)
+);
+
+-- Only a SHA-256 digest of each refresh token is kept, so a database dump
+-- cannot be replayed as a set of live sessions.
+CREATE TABLE refresh_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token_hash CHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    revoked_at DATETIME NULL,
+    CONSTRAINT uq_refresh_tokens_hash UNIQUE (token_hash),
+    CONSTRAINT fk_refresh_tokens_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE
+);

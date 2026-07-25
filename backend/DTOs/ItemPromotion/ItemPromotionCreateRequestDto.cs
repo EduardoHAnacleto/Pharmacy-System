@@ -18,8 +18,8 @@
 
         public string ProductType { get; set; } = string.Empty;
 
-        public int CreatedByUserId { get; set; }
-
-        public string CreatedByUserName { get; set; } = null!;
+        // CreatedByUserId and CreatedByUserName are deliberately absent: they are
+        // read from the authenticated caller's token. Accepting them from the
+        // request body made the audit trail whatever the client chose to send.
     }
 }

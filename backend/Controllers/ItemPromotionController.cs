@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +45,16 @@ namespace PharmacyWorkerAPI.Controllers
         }
 
         // ===============================
+        // CURRENT USER
+        // ===============================
+
+        /// <summary>Authenticated user's id. Write actions require [Authorize].</summary>
+        private int CurrentUserId =>
+            int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+
+        private string CurrentUserName => User.Identity?.Name ?? "unknown";
+
+        // ===============================
         // PATHS
         // ===============================
 
@@ -59,6 +71,7 @@ namespace PharmacyWorkerAPI.Controllers
         // CREATE PROMOTION
         // ===============================
         [HttpPost]
+        [Authorize(Roles = Roles.Admin)]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Create([FromForm] ItemPromotionCreateRequestDto dto)
         {
@@ -120,8 +133,9 @@ namespace PharmacyWorkerAPI.Controllers
                 CategoryId = dto.CategoryId,
                 ProductType = dto.ProductType,
 
-                CreatedByUserId = dto.CreatedByUserId,
-                CreatedByUserName = dto.CreatedByUserName,
+                // Audit fields come from the token, not from the request.
+                CreatedByUserId = CurrentUserId,
+                CreatedByUserName = CurrentUserName,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -197,6 +211,7 @@ namespace PharmacyWorkerAPI.Controllers
         // DELETE PROMOTION
         // ===============================
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Delete(int id)
         {
             var promotion = await _context.ItemPromotions.FindAsync(id);

@@ -18,8 +18,8 @@ export interface PromotionCreatePayload {
   categoryId: number
   productType: string
 
-  createdByUserId: number
-  createdByUserName: string
+  // createdByUserId / createdByUserName are not sent: the API derives them from
+  // the authenticated caller's token.
 }
 
 function describeError(err: unknown, fallback: string): string {
@@ -87,9 +87,6 @@ export const usePromotionsStore = defineStore('promotions', {
       formData.append('isActive', String(payload.isActive))
       formData.append('categoryId', payload.categoryId.toString())
       formData.append('productType', payload.productType)
-
-      formData.append('createdByUserId', payload.createdByUserId.toString())
-      formData.append('createdByUserName', payload.createdByUserName)
 
       try {
         const { data } = await api.post<ItemPromotion>('/item-promotions', formData, {

@@ -1,6 +1,12 @@
+using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PharmacyWorkerAPI.Data;
 using PharmacyWorkerAPI.Hubs;
+using PharmacyWorkerAPI.Options;
 using PharmacyWorkerAPI.Services;
 using StackExchange.Redis;
 
@@ -29,9 +35,24 @@ if (string.IsNullOrWhiteSpace(redisConnectionString))
 var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? string.Empty)
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
+var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
+                 ?? new JwtOptions();
+
+// A weak or absent signing key means anyone can mint an admin token, so refuse
+// to start rather than come up insecure.
+if (jwtOptions.SigningKey.Length < 32)
+{
+    throw new InvalidOperationException(
+        "Jwt:SigningKey must be at least 32 characters. Set the Jwt__SigningKey "
+        + "environment variable to a random secret.");
+}
+
 // ===============================
 // SERVICES
 // ===============================
+builder.Services.Configure<JwtOptions>(
+    builder.Configuration.GetSection(JwtOptions.SectionName));
+
 builder.Services.AddControllers();
 
 builder.Services.AddSignalR(options =>
@@ -46,6 +67,51 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Auth
+builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddScoped<AuthService>();
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+
+            ValidateAudience = true,
+            ValidAudience = jwtOptions.Audience,
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtOptions.SigningKey)),
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// Rate limiting. Brute-forcing the login is now bounded server-side; the old
+// limit lived in the browser's localStorage and could be cleared at will.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("login", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(5),
+                QueueLimit = 0,
+            }));
+});
 
 // Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
@@ -115,11 +181,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseRateLimiter();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.MapHub<PromotionsHub>("/promotionsHub")
     .RequireCors("FrontendPolicy");
+
+await AdminUserSeeder.SeedAsync(app.Services);
 
 app.Run();
