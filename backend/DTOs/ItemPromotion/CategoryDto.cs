@@ -1,5 +1,16 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace PharmacyWorkerAPI.DTOs.ItemPromotion
 {
+    /// <summary>Create or rename a category.</summary>
+    public class CategoryWriteDto
+    {
+        // 30 matches the column, so oversized input is a 400 rather than a 500.
+        [Required(ErrorMessage = "O nome da categoria é obrigatório.")]
+        [MaxLength(30, ErrorMessage = "O nome da categoria deve ter no máximo 30 caracteres.")]
+        public string Name { get; set; } = string.Empty;
+    }
+
     public class CategoryDto
     {
         /// <summary>

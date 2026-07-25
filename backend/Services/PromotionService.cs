@@ -51,7 +51,8 @@ namespace PharmacyWorkerAPI.Services
             DateTime? minCreatedAt, CancellationToken ct = default);
 
         Task<PagedResultDto<ItemPromotionResponseDto>> GetActivePagedAsync(
-            int page, int pageSize, string? timeZone, CancellationToken ct = default);
+            int page, int pageSize, string? timeZone, PromotionFilterDto? filter = null,
+            CancellationToken ct = default);
 
         Task<List<PromotionStatusHistoryDto>?> GetHistoryAsync(int id, CancellationToken ct = default);
 
@@ -355,26 +356,28 @@ namespace PharmacyWorkerAPI.Services
                 });
 
         public Task<PagedResultDto<ItemPromotionResponseDto>> GetActivePagedAsync(
-            int page, int pageSize, string? timeZone, CancellationToken ct = default)
+            int page, int pageSize, string? timeZone, PromotionFilterDto? filter = null,
+            CancellationToken ct = default)
         {
             (page, pageSize) = ClampPaging(page, pageSize);
 
             var userTimeZone = Utilities.GetTimeZone(timeZone, _logger);
+            var normalised = (filter ?? new PromotionFilterDto()).Normalised();
 
-            // The window depends on the caller's time zone, so the key must include
-            // it — otherwise the first caller's result is served to everyone.
-            var key = $"active:tz:{userTimeZone.Id}:page:{page}:size:{pageSize}";
+            // The window depends on the caller's time zone, and the result on every
+            // filter, so all of them belong in the key — otherwise the first
+            // caller's result is served to everyone.
+            var key = $"active:tz:{userTimeZone.Id}:page:{page}:size:{pageSize}:{normalised.CacheKey()}";
 
             return _cache.GetOrSetAsync(PromotionScope, key, CacheTtl, async () =>
             {
                 var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTimeZone);
 
-                var query = VisibleAt(nowLocal);
+                var query = ApplyFilter(VisibleAt(nowLocal), normalised);
 
                 var totalItems = await query.CountAsync(ct);
 
-                var items = await query
-                    .OrderBy(p => p.DateEnd)
+                var items = await Sort(query, normalised.Sort)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .Select(ItemPromotionMapping.ToResponseDto)
@@ -383,6 +386,47 @@ namespace PharmacyWorkerAPI.Services
                 return Page(items, page, pageSize, totalItems);
             });
         }
+
+        /// <summary>
+        /// Narrows a storefront query by search term, category and price range.
+        /// </summary>
+        /// <remarks>
+        /// <c>Contains</c> translates to a <c>LIKE '%term%'</c>, which cannot use the
+        /// name index. That is the right trade at this size — a shop's whole catalogue
+        /// is hundreds of rows, and a MySQL full-text index would add a schema
+        /// dependency for a scan that costs nothing yet. Worth revisiting if a
+        /// catalogue reaches tens of thousands of rows.
+        /// </remarks>
+        private static IQueryable<ItemPromotion> ApplyFilter(
+            IQueryable<ItemPromotion> query, PromotionFilterDto filter)
+        {
+            if (!string.IsNullOrEmpty(filter.Search))
+                query = query.Where(p => p.Name.Contains(filter.Search));
+
+            if (filter.CategoryId is int categoryId)
+                query = query.Where(p => p.CategoryId == categoryId);
+
+            if (filter.MinPrice is decimal min)
+                query = query.Where(p => p.Price >= min);
+
+            if (filter.MaxPrice is decimal max)
+                query = query.Where(p => p.Price <= max);
+
+            return query;
+        }
+
+        private static IQueryable<ItemPromotion> Sort(
+            IQueryable<ItemPromotion> query, string? sort) => sort switch
+            {
+                PromotionSort.PriceAscending => query.OrderBy(p => p.Price).ThenBy(p => p.Id),
+                PromotionSort.PriceDescending => query.OrderByDescending(p => p.Price).ThenBy(p => p.Id),
+                PromotionSort.Newest => query.OrderByDescending(p => p.CreatedAt).ThenBy(p => p.Id),
+                PromotionSort.Name => query.OrderBy(p => p.Name).ThenBy(p => p.Id),
+
+                // Default: whatever expires soonest, so the grid leads with the
+                // promotions a visitor has least time left to act on.
+                _ => query.OrderBy(p => p.DateEnd).ThenBy(p => p.Id),
+            };
 
         public async Task<List<PromotionStatusHistoryDto>?> GetHistoryAsync(
             int id, CancellationToken ct = default)

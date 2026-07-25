@@ -11,7 +11,12 @@
           ref="cards"
         >
           <div class="card h-100">
-            <img class="card-img-top" :src="item.imageUrl" alt="Imagem do produto" />
+            <img
+              class="card-img-top"
+              :src="item.imageUrl"
+              :alt="t('product.imageAlt', { name: item.name })"
+              loading="lazy"
+            />
 
             <div class="card-body p-4">
               <div class="text-center">
@@ -20,21 +25,23 @@
                 <!-- PROMOTED -->
                 <div v-if="item.priceBefore">
                   <span class="text-muted text-decoration-line-through">
-                    R$ {{ item.priceBefore.toFixed(2) }}
+                    {{ formatMoney(item.priceBefore) }}
                   </span>
                   <br />
-                  <span class="fw-bold"> R$ {{ item.price.toFixed(2) }} </span>
+                  <span class="fw-bold">{{ formatMoney(item.price) }}</span>
                 </div>
 
                 <!-- NOT PROMOTED -->
-                <div v-else>R$ {{ item.price.toFixed(2) }}</div>
+                <div v-else>{{ formatMoney(item.price) }}</div>
 
                 <!-- DURATION OF PROMOTION -->
                 <small v-if="item.dateStart && item.dateEnd" class="text-muted d-block mt-2">
-                  Promoção válida de
-                  {{ formatDate(item.dateStart) }}
-                  até
-                  {{ formatDate(item.dateEnd) }}
+                  {{
+                    t('product.validity', {
+                      from: formatDate(item.dateStart),
+                      to: formatDate(item.dateEnd),
+                    })
+                  }}
                 </small>
               </div>
             </div>
@@ -42,7 +49,7 @@
             <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
               <div class="text-center">
                 <button class="btn btn-outline-dark mt-auto" @click="addToCart(item)">
-                  Adicionar
+                  {{ t('product.add') }}
                 </button>
               </div>
             </div>
@@ -51,7 +58,7 @@
 
         <!-- EMPTY LIST -->
         <div v-if="products.length === 0" class="text-center text-muted py-5">
-          Nenhum produto disponível
+          {{ t('product.empty') }}
         </div>
       </div>
     </div>
@@ -59,16 +66,52 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useCartStore } from '@/stores/cart'
+import { useSettingsStore } from '@/stores/settings'
+import { useJsonLd } from '@/composables/useJsonLd'
 import { track, trackPromotionView } from '@/services/analytics'
+import { formatDate, formatMoney } from '@/utils/format'
 import type { ItemPromotion } from '@/types/itemPromotion'
 
 const props = defineProps<{
   products: ItemPromotion[]
 }>()
 
+const { t } = useI18n()
 const cartStore = useCartStore()
+const settings = useSettingsStore()
+
+/**
+ * STRUCTURED DATA
+ *
+ * The grid described as a schema.org ItemList of Products with Offers, so a
+ * search engine reads each promotion's price and validity instead of inferring
+ * them from markup — and so a shared link can show a rich result.
+ */
+const structuredData = computed(() => ({
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  itemListElement: props.products.map((item, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    item: {
+      '@type': 'Product',
+      name: item.name,
+      image: item.imageUrl,
+      offers: {
+        '@type': 'Offer',
+        price: item.price,
+        priceCurrency: settings.settings.currency,
+        availability: 'https://schema.org/InStock',
+        priceValidUntil: item.dateEnd,
+      },
+    },
+  })),
+}))
+
+useJsonLd(structuredData)
 
 function addToCart(item: ItemPromotion) {
   cartStore.addItem({
@@ -121,11 +164,4 @@ onBeforeUnmount(() => {
   observer.value?.disconnect()
   observer.value = null
 })
-
-/**
- * UTILITIES
- */
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('pt-BR')
-}
 </script>

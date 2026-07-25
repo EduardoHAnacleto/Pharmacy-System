@@ -208,5 +208,27 @@ export const usePromotionsStore = defineStore('promotions', {
         return false
       }
     },
+
+    /**
+     * ==========================
+     * DUPLICATE
+     * ==========================
+     * Copies a live promotion into a new one under a new window, reusing the
+     * image. The same server-side operation as reactivate — cloning with a new
+     * window — reached under the name an operator looks for when copying
+     * something that is still running.
+     */
+    async duplicatePromotion(id: number, payload: ReactivatePayload) {
+      this.error = null
+      try {
+        const { data } = await api.post<ItemPromotion>(`/item-promotions/${id}/duplicate`, payload)
+
+        this.promotions.unshift(data)
+        return true
+      } catch (err: unknown) {
+        this.error = describeError(err, 'Erro ao duplicar promoção')
+        return false
+      }
+    },
   },
 })

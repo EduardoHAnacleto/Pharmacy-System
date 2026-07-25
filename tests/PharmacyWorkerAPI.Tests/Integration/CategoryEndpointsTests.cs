@@ -1,0 +1,148 @@
+using System.Net;
+using System.Net.Http.Json;
+using PharmacyWorkerAPI.DTOs.ItemPromotion;
+using Xunit;
+
+namespace PharmacyWorkerAPI.Tests.Integration;
+
+/// <summary>
+/// Category maintenance, so a shop that is not a pharmacy can define its own.
+/// </summary>
+[Collection(ApiCollection.Name)]
+public class CategoryEndpointsTests
+{
+    private readonly ApiFixture _fixture;
+
+    public CategoryEndpointsTests(ApiFixture fixture) => _fixture = fixture;
+
+    [SkippableFact]
+    public async Task Writes_RequireAToken()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = _fixture.CreateClient();
+
+        var create = await client.PostAsJsonAsync("/api/v1/categories", new { name = "Pães" });
+        var rename = await client.PutAsJsonAsync("/api/v1/categories/1", new { name = "Pães" });
+        var delete = await client.DeleteAsync("/api/v1/categories/1");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, create.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, rename.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, delete.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Create_ThenRename_ThenDelete()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var name = $"Pães {Guid.NewGuid():N}";
+
+        var created = await client.PostAsJsonAsync("/api/v1/categories", new { name });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        var category = await created.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.True(category!.Id > 0);
+
+        var renamed = $"Padaria {Guid.NewGuid():N}";
+        var rename = await client.PutAsJsonAsync(
+            $"/api/v1/categories/{category.Id}", new { name = renamed });
+
+        Assert.Equal(HttpStatusCode.OK, rename.StatusCode);
+
+        // Read through the storefront's own endpoint: renaming must invalidate the
+        // cached category list, or the admin sees a change nobody else does.
+        var list = await client.GetFromJsonAsync<List<CategoryDto>>(
+            "/api/v1/item-promotions/categories/all");
+
+        Assert.Contains(list!, c => c.Id == category.Id && c.Name == renamed);
+
+        var delete = await client.DeleteAsync($"/api/v1/categories/{category.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Create_RejectsADuplicateNameRegardlessOfCase()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var name = $"Bebidas {Guid.NewGuid():N}";
+
+        await client.PostAsJsonAsync("/api/v1/categories", new { name });
+
+        var duplicate = await client.PostAsJsonAsync(
+            "/api/v1/categories", new { name = name.ToUpperInvariant() });
+
+        Assert.Equal(HttpStatusCode.BadRequest, duplicate.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Create_RejectsAnEmptyName()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var response = await client.PostAsJsonAsync("/api/v1/categories", new { name = "" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Create_RejectsANameLongerThanTheColumn()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        // 31 characters against a varchar(30): a 400 from validation rather than a
+        // 500 from the database.
+        var response = await client.PostAsJsonAsync(
+            "/api/v1/categories", new { name = new string('x', 31) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Delete_RefusesACategoryInUse()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        // Category 1 is seeded and used by the promotions the other tests create.
+        // Deleting it would orphan them, and the FK is Restrict for that reason —
+        // this asserts the caller gets an explanation instead of a 500.
+        var promotions = await client.GetFromJsonAsync<List<ItemPromotionResponseDto>>(
+            "/api/v1/item-promotions/all");
+
+        Skip.If(promotions is null or { Count: 0 }, "No promotions exist to hold a category.");
+
+        var inUse = promotions!.First().CategoryId;
+
+        var response = await client.DeleteAsync($"/api/v1/categories/{inUse}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var message = await response.Content.ReadAsStringAsync();
+        Assert.Contains("em uso", message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [SkippableFact]
+    public async Task Rename_AnUnknownId_Returns404()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var response = await client.PutAsJsonAsync(
+            "/api/v1/categories/999999", new { name = "Qualquer" });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    private async Task<HttpClient> AuthenticatedClientAsync()
+    {
+        var client = _fixture.CreateClient();
+        var token = await LoginHelper.GetAccessTokenAsync(client);
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        return client;
+    }
+}

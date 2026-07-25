@@ -355,6 +355,145 @@ public class PromotionEndpointsTests
     }
 
     // ===============================
+    // SEARCH AND FILTERS
+    // ===============================
+
+    [SkippableFact]
+    public async Task GetActivePaged_FiltersByName()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var marker = $"Xarope{Guid.NewGuid():N}";
+
+        var created = await client.PostAsync(
+            "/api/v1/item-promotions", BuildForm(ValidPng, name: marker));
+        created.EnsureSuccessStatusCode();
+
+        using var anonymous = _fixture.CreateClient();
+
+        var matched = await anonymous.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            $"/api/v1/item-promotions/active?filter.search={marker}");
+
+        Assert.Single(matched!.Items);
+        Assert.Equal(marker, matched.Items[0].Name);
+
+        var missed = await anonymous.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            "/api/v1/item-promotions/active?filter.search=nada-com-esse-nome");
+
+        Assert.Empty(missed!.Items);
+    }
+
+    [SkippableFact]
+    public async Task GetActivePaged_FiltersByPriceRange()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var marker = $"Faixa{Guid.NewGuid():N}";
+
+        await client.PostAsync(
+            "/api/v1/item-promotions",
+            BuildForm(ValidPng, name: marker, price: 5.00m, priceBefore: 10.00m));
+
+        using var anonymous = _fixture.CreateClient();
+
+        var inRange = await anonymous.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            $"/api/v1/item-promotions/active?filter.search={marker}&filter.minPrice=4&filter.maxPrice=6");
+
+        Assert.Single(inRange!.Items);
+
+        var outOfRange = await anonymous.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            $"/api/v1/item-promotions/active?filter.search={marker}&filter.minPrice=100");
+
+        Assert.Empty(outOfRange!.Items);
+    }
+
+    [SkippableFact]
+    public async Task GetActivePaged_SortsByPrice()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var marker = $"Ordem{Guid.NewGuid():N}";
+
+        await client.PostAsync(
+            "/api/v1/item-promotions",
+            BuildForm(ValidPng, name: $"{marker}-caro", price: 80.00m, priceBefore: 99.00m));
+        await client.PostAsync(
+            "/api/v1/item-promotions",
+            BuildForm(ValidPng, name: $"{marker}-barato", price: 3.00m, priceBefore: 9.00m));
+
+        using var anonymous = _fixture.CreateClient();
+
+        var ascending = await anonymous.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            $"/api/v1/item-promotions/active?filter.search={marker}&filter.sort=priceAsc");
+
+        Assert.Equal(2, ascending!.Items.Count);
+        Assert.Equal(3.00m, ascending.Items[0].Price);
+
+        var descending = await anonymous.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            $"/api/v1/item-promotions/active?filter.search={marker}&filter.sort=priceDesc");
+
+        Assert.Equal(80.00m, descending!.Items[0].Price);
+    }
+
+    [SkippableFact]
+    public async Task GetActivePaged_CachesEachFilterSeparately()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var marker = $"Cache{Guid.NewGuid():N}";
+
+        await client.PostAsync(
+            "/api/v1/item-promotions", BuildForm(ValidPng, name: marker));
+
+        using var anonymous = _fixture.CreateClient();
+
+        // Warm the unfiltered page first. If the filter were missing from the cache
+        // key, this entry would then be served for the filtered request too.
+        var unfiltered = await anonymous.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            "/api/v1/item-promotions/active?page=1&pageSize=50");
+
+        var filtered = await anonymous.GetFromJsonAsync<PagedResultDto<ItemPromotionResponseDto>>(
+            $"/api/v1/item-promotions/active?page=1&pageSize=50&filter.search={marker}");
+
+        Assert.True(unfiltered!.TotalItems > filtered!.TotalItems);
+        Assert.Single(filtered.Items);
+    }
+
+    [SkippableFact]
+    public async Task Duplicate_ClonesALivePromotion()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var created = await client.PostAsync(
+            "/api/v1/item-promotions", BuildForm(ValidPng, name: "Para duplicar"));
+        var original = await created.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+
+        // Duplicating does not require archiving first: it is the operation for
+        // copying something that is still running.
+        var duplicated = await client.PostAsJsonAsync(
+            $"/api/v1/item-promotions/{original!.Id}/duplicate",
+            new
+            {
+                dateStart = "2026-03-01T00:00:00Z",
+                dateEnd = "2099-12-31T00:00:00Z",
+                publish = true,
+            });
+
+        Assert.Equal(HttpStatusCode.Created, duplicated.StatusCode);
+
+        var clone = await duplicated.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+
+        Assert.NotEqual(original.Id, clone!.Id);
+        Assert.Equal(original.Id, clone.SourcePromotionId);
+        Assert.Equal(original.ImageUrl, clone.ImageUrl);
+    }
+
+    // ===============================
     // HEALTH
     // ===============================
 

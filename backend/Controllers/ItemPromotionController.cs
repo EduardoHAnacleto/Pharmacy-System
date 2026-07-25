@@ -88,7 +88,14 @@ namespace PharmacyWorkerAPI.Controllers
         /// Runs an archived promotion again under a new window, reusing its image
         /// and recording which promotion it came from.
         /// </summary>
+        /// <remarks>
+        /// <c>duplicate</c> is the same operation under the name an operator reaches
+        /// for when copying a live promotion: both clone the row under a new window
+        /// and keep the lineage. One implementation, two routes, rather than two
+        /// implementations that drift.
+        /// </remarks>
         [HttpPost("{id:int}/reactivate")]
+        [HttpPost("{id:int}/duplicate")]
         [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Reactivate(
             int id, [FromBody] ReactivatePromotionRequestDto dto, CancellationToken ct)
@@ -203,13 +210,21 @@ namespace PharmacyWorkerAPI.Controllers
             [FromQuery] DateTime? minCreatedAt, CancellationToken ct) =>
             Ok(await _promotions.GetCreatedAfterAsync(minCreatedAt, ct));
 
+        /// <summary>
+        /// The storefront grid: publishable promotions inside their date window.
+        /// </summary>
+        /// <remarks>
+        /// Search, category and price filters are bound from the query string, so an
+        /// unfiltered request behaves exactly as before.
+        /// </remarks>
         [HttpGet("active")]
         public async Task<IActionResult> GetActivePaged(
             CancellationToken ct,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 12,
-            [FromQuery] string? timeZone = null) =>
-            Ok(await _promotions.GetActivePagedAsync(page, pageSize, timeZone, ct));
+            [FromQuery] string? timeZone = null,
+            [FromQuery] PromotionFilterDto? filter = null) =>
+            Ok(await _promotions.GetActivePagedAsync(page, pageSize, timeZone, filter, ct));
 
         [HttpGet("categories/all")]
         public async Task<IActionResult> GetAllCategories(CancellationToken ct) =>
