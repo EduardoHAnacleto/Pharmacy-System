@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using PharmacyWorkerAPI.DTOs.ItemPromotion;
 using Xunit;
@@ -36,7 +38,7 @@ public class CategoryEndpointsTests
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
         using var client = await AuthenticatedClientAsync();
 
-        var name = $"Pães {Guid.NewGuid():N}";
+        var name = Unique("Pães");
 
         var created = await client.PostAsJsonAsync("/api/v1/categories", new { name });
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
@@ -44,7 +46,7 @@ public class CategoryEndpointsTests
         var category = await created.Content.ReadFromJsonAsync<CategoryDto>();
         Assert.True(category!.Id > 0);
 
-        var renamed = $"Padaria {Guid.NewGuid():N}";
+        var renamed = Unique("Padaria");
         var rename = await client.PutAsJsonAsync(
             $"/api/v1/categories/{category.Id}", new { name = renamed });
 
@@ -67,9 +69,14 @@ public class CategoryEndpointsTests
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
         using var client = await AuthenticatedClientAsync();
 
-        var name = $"Bebidas {Guid.NewGuid():N}";
+        var name = Unique("Bebidas");
 
-        await client.PostAsJsonAsync("/api/v1/categories", new { name });
+        var first = await client.PostAsJsonAsync("/api/v1/categories", new { name });
+
+        // Asserted, not ignored: without this the test passes even when the first
+        // create fails for an unrelated reason, because the "duplicate" then gets
+        // rejected for a different one.
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
 
         var duplicate = await client.PostAsJsonAsync(
             "/api/v1/categories", new { name = name.ToUpperInvariant() });
@@ -108,17 +115,25 @@ public class CategoryEndpointsTests
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
         using var client = await AuthenticatedClientAsync();
 
-        // Category 1 is seeded and used by the promotions the other tests create.
-        // Deleting it would orphan them, and the FK is Restrict for that reason —
-        // this asserts the caller gets an explanation instead of a 500.
-        var promotions = await client.GetFromJsonAsync<List<ItemPromotionResponseDto>>(
-            "/api/v1/item-promotions/all");
+        // Creates its own category and its own promotion in it, rather than looking
+        // for a promotion some other test class happens to have left behind. Tests
+        // in a collection share a database but must not depend on each other's
+        // order — this one skipped in CI for exactly that reason.
+        var created = await client.PostAsJsonAsync(
+            "/api/v1/categories", new { name = Unique("Em uso") });
 
-        Skip.If(promotions is null or { Count: 0 }, "No promotions exist to hold a category.");
+        created.EnsureSuccessStatusCode();
+        var category = await created.Content.ReadFromJsonAsync<CategoryDto>();
 
-        var inUse = promotions!.First().CategoryId;
+        var promotion = await client.PostAsync(
+            "/api/v1/item-promotions", PromotionForm(category!.Id));
 
-        var response = await client.DeleteAsync($"/api/v1/categories/{inUse}");
+        promotion.EnsureSuccessStatusCode();
+
+        // Deleting now would orphan that promotion. The FK is Restrict, so the
+        // database would refuse anyway; this asserts the caller gets an
+        // explanation naming the count instead of a 500.
+        var response = await client.DeleteAsync($"/api/v1/categories/{category.Id}");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
@@ -136,6 +151,49 @@ public class CategoryEndpointsTests
             "/api/v1/categories/999999", new { name = "Qualquer" });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    /// <summary>
+    /// A collision-free name that still fits the column.
+    /// </summary>
+    /// <remarks>
+    /// Eight hex characters, not a full GUID: the name column is varchar(30), and a
+    /// full GUID pushed every generated name past it. The create then failed
+    /// validation, which is what it should do — but it made this suite report a
+    /// defect in the endpoint rather than in the test.
+    /// </remarks>
+    private static string Unique(string prefix) =>
+        $"{prefix} {Guid.NewGuid():N}"[..Math.Min(prefix.Length + 9, 30)];
+
+    /// <summary>A minimal valid promotion, to hold a category in place.</summary>
+    private static MultipartFormDataContent PromotionForm(int categoryId)
+    {
+        var png = new ByteArrayContent(
+        [
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+        ]);
+
+        png.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+
+        var form = new MultipartFormDataContent
+        {
+            { new StringContent("Ocupa categoria"), "Name" },
+            { new StringContent("9.90"), "Price" },
+            { new StringContent("19.90"), "PriceBefore" },
+            { new StringContent("2026-01-01T00:00:00Z"), "DateStart" },
+            { new StringContent("2099-12-31T00:00:00Z"), "DateEnd" },
+            { new StringContent("true"), "IsActive" },
+            {
+                new StringContent(categoryId.ToString(CultureInfo.InvariantCulture)),
+                "CategoryId"
+            },
+            { new StringContent("default"), "ProductType" },
+        };
+
+        form.Add(png, "Image", "promo.png");
+
+        return form;
     }
 
     private async Task<HttpClient> AuthenticatedClientAsync()
