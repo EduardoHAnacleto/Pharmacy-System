@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace PharmacyWorkerAPI.Models
+namespace Storefront.Api.Models
 {
     /// <summary>Storefront event types. Anything not listed is rejected at ingestion.</summary>
     public static class AnalyticsEventType

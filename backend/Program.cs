@@ -10,13 +10,13 @@ using Microsoft.OpenApi;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using PharmacyWorkerAPI.Data;
-using PharmacyWorkerAPI.Hubs;
-using PharmacyWorkerAPI.Infrastructure;
-using PharmacyWorkerAPI.Options;
-using PharmacyWorkerAPI.Services;
 using Serilog;
 using StackExchange.Redis;
+using Storefront.Api.Data;
+using Storefront.Api.Hubs;
+using Storefront.Api.Infrastructure;
+using Storefront.Api.Options;
+using Storefront.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

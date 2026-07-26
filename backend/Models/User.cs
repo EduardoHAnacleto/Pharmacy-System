@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace PharmacyWorkerAPI.Models
+namespace Storefront.Api.Models
 {
     /// <summary>
     /// An operator of the store's admin area. This is staff, not a customer:

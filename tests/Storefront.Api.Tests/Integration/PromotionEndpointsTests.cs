@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
-using PharmacyWorkerAPI.DTOs;
-using PharmacyWorkerAPI.DTOs.ItemPromotion;
+using Storefront.Api.DTOs;
+using Storefront.Api.DTOs.ItemPromotion;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Integration;
+namespace Storefront.Api.Tests.Integration;
 
 [Collection(ApiCollection.Name)]
 public class PromotionEndpointsTests

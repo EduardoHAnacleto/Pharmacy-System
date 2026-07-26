@@ -2,10 +2,10 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using PharmacyWorkerAPI.DTOs.ItemPromotion;
+using Storefront.Api.DTOs.ItemPromotion;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Integration;
+namespace Storefront.Api.Tests.Integration;
 
 /// <summary>
 /// Category maintenance, so a shop that is not a pharmacy can define its own.

@@ -1,7 +1,7 @@
-using PharmacyWorkerAPI.DTOs.ItemPromotion;
+using Storefront.Api.DTOs.ItemPromotion;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Unit;
+namespace Storefront.Api.Tests.Unit;
 
 /// <summary>
 /// Filter normalisation, which decides both what is queried and how it is cached.

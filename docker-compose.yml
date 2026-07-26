@@ -1,3 +1,11 @@
+# Deliberately NOT renamed alongside the project.
+#
+# The compose project name prefixes every volume: db_data is really
+# pharmacy-system_db_data on disk. Changing it here would leave a running
+# deployment's database, Redis appendonly file and uploaded images orphaned
+# behind their old prefix, and bring the stack up empty — a data loss dressed as
+# a rename. Anyone who wants it neutral must migrate the volumes first; the
+# procedure is in docs/OPERACOES.md.
 name: pharmacy-system
 
 services:
@@ -6,7 +14,7 @@ services:
   # ==========================
   db:
     image: mysql:8.0
-    container_name: pharmacy_db
+    container_name: storefront_db
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -14,7 +22,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     # Not published to the host: the database is only reachable from the
-    # internal pharmacy_network. Use `docker compose exec db mysql ...` for
+    # internal storefront_network. Use `docker compose exec db mysql ...` for
     # maintenance, or docker-compose.dev.yml to expose it locally.
     # No entrypoint init scripts: the schema is owned by EF Core migrations,
     # applied by the migrator service. Entrypoint scripts only ever ran against
@@ -37,14 +45,14 @@ services:
       retries: 10
       start_period: 30s
     networks:
-      - pharmacy_network
+      - storefront_network
 
   # ==========================
   # REDIS CACHE
   # ==========================
   redis:
     image: redis:7
-    container_name: pharmacy_redis
+    container_name: storefront_redis
     restart: unless-stopped
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
     volumes:
@@ -55,7 +63,7 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - pharmacy_network
+      - storefront_network
 
   # ==========================
   # MIGRATOR (runs once, then exits)
@@ -64,8 +72,8 @@ services:
     build:
       context: ./backend
       target: migrator
-    image: ghcr.io/eduardohanacleto/pharmacy-migrator:latest
-    container_name: pharmacy_migrator
+    image: ghcr.io/eduardohanacleto/storefront-migrator:latest
+    container_name: storefront_migrator
     restart: "no"
     depends_on:
       db:
@@ -74,7 +82,7 @@ services:
       - --connection
       - server=db;port=3306;database=${MYSQL_DATABASE};user=${MYSQL_USER};password=${MYSQL_PASSWORD}
     networks:
-      - pharmacy_network
+      - storefront_network
 
   # ==========================
   # BACKEND (.NET API)
@@ -83,8 +91,8 @@ services:
     build:
       context: ./backend
       target: api
-    image: ghcr.io/eduardohanacleto/pharmacy-backend:latest
-    container_name: pharmacy_api
+    image: ghcr.io/eduardohanacleto/storefront-backend:latest
+    container_name: storefront_api
     restart: unless-stopped
     depends_on:
       db:
@@ -105,7 +113,7 @@ services:
       AdminSeed__Username: ${ADMIN_SEED_USERNAME}
       AdminSeed__Password: ${ADMIN_SEED_PASSWORD}
       AdminSeed__Email: ${ADMIN_SEED_EMAIL:-}
-      # Initial store_settings row, written once while the table is empty, so a new
+      # Seed the store_settings row once, while the table is empty, so a new
       # deployment arrives presentable. After that the admin screen owns these —
       # changing them here has no effect.
       Store__Name: ${STORE_NAME:-}
@@ -113,8 +121,16 @@ services:
       Store__Locale: ${STORE_LOCALE:-}
       Store__CountryCode: ${STORE_COUNTRY_CODE:-}
       Store__TimeZone: ${STORE_TIME_ZONE:-}
-      Store__WhatsAppNumber: ${STORE_WHATSAPP_NUMBER:-}
       Store__LogoUrl: ${STORE_LOGO_URL:-}
+      # The exception: this one is also a live override. While it is set it wins
+      # over the stored row on every read, so the number can be changed here and
+      # picked up with a restart — no rebuild, and nothing baked into the bundle.
+      # Leave it empty to let the admin screen own the number.
+      Store__WhatsAppNumber: ${STORE_WHATSAPP_NUMBER:-}
+      # How long raw analytics events are kept before the daily rollup replaces
+      # them. 90 days is the agreed default; reports read analytics_daily, which is
+      # never purged.
+      Analytics__RawRetentionDays: ${ANALYTICS_RAW_RETENTION_DAYS:-90}
       # Traces and metrics are exported only when a collector is configured;
       # instrumentation runs either way.
       OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-}
@@ -135,7 +151,7 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      - pharmacy_network
+      - storefront_network
 
   # ==========================
   # FRONTEND (Vue + Nginx)
@@ -143,10 +159,8 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        VITE_WHATSAPP_NUMBER: ${VITE_WHATSAPP_NUMBER}
-    image: ghcr.io/eduardohanacleto/pharmacy-frontend:latest
-    container_name: pharmacy_frontend
+    image: ghcr.io/eduardohanacleto/storefront-frontend:latest
+    container_name: storefront_frontend
     restart: unless-stopped
     depends_on:
       backend:
@@ -154,7 +168,7 @@ services:
     ports:
       - "80:80"
     networks:
-      - pharmacy_network
+      - storefront_network
 
 # ==========================
 # VOLUMES
@@ -168,5 +182,5 @@ volumes:
 # NETWORK
 # ==========================
 networks:
-  pharmacy_network:
+  storefront_network:
     driver: bridge

@@ -1,7 +1,7 @@
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Models;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Unit;
+namespace Storefront.Api.Tests.Unit;
 
 public class PromotionVisibilityTests
 {

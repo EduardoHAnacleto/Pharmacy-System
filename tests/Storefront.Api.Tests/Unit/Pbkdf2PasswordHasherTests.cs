@@ -1,7 +1,7 @@
-using PharmacyWorkerAPI.Services;
+using Storefront.Api.Services;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Unit;
+namespace Storefront.Api.Tests.Unit;
 
 public class Pbkdf2PasswordHasherTests
 {

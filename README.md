@@ -130,6 +130,9 @@ cp .env.example .env
 # Preencha .env. Obrigatórios: MYSQL_*, REDIS_PASSWORD, JWT_SIGNING_KEY
 # (mínimo 32 caracteres — a API se recusa a subir com menos) e ADMIN_SEED_*.
 #   openssl rand -base64 48
+#
+# STORE_WHATSAPP_NUMBER é opcional: definida, o ambiente manda no número do
+# WhatsApp; vazia, quem manda é a tela /admin/settings.
 
 docker compose up --build -d
 ```
@@ -180,7 +183,7 @@ disponível. A verificação real é o CI, que tem daemon.
 
 ```
 Pharmacy-System
-├── backend/                 ASP.NET Core 9
+├── backend/                 ASP.NET Core 9 — projeto Storefront.Api
 │   ├── Controllers/         HTTP
 │   ├── Services/            regras de negócio
 │   ├── Data/                AppDbContext
@@ -189,7 +192,7 @@ Pharmacy-System
 │   └── Dockerfile           build, migrations-build, migrator, api
 ├── frontend/                Vue 3 + Vite
 │   └── src/                 views, components, stores, services, i18n, utils
-├── tests/                   xUnit (fora de backend/: o SDK web engloba **/*.cs)
+├── tests/                   Storefront.Api.Tests (fora de backend/: o SDK web engloba **/*.cs)
 ├── database/upgrades/       baseline para bases criadas antes das migrations
 ├── docs/                    plano, runbook, ADRs, modelo de dados
 ├── scripts/backup.sh
@@ -209,8 +212,8 @@ Pharmacy-System
 - **E2E** — Playwright em chromium
 - **Compose** — valida as duas stacks contra `.env.example`
 
-[`docker.yml`](.github/workflows/docker.yml) publica `pharmacy-backend`,
-`pharmacy-migrator` e `pharmacy-frontend` no GHCR e roda Trivy.
+[`docker.yml`](.github/workflows/docker.yml) publica `storefront-backend`,
+`storefront-migrator` e `storefront-frontend` no GHCR e roda Trivy.
 
 ---
 
@@ -227,6 +230,9 @@ Limitações conhecidas, explicitamente:
 - **Uma stack por loja.** Multi-tenant real (`tenant_id` + resolução por
   subdomínio) só se paga com clientes suficientes; ver
   [ADR 0005](docs/adr/0005-white-label-antes-de-multi-tenant.md).
+- **`name: pharmacy-system` no compose continua com o nome antigo.** Ele prefixa os
+  volumes, então trocá-lo sem migrar os dados sobe a stack vazia. Procedimento em
+  [`docs/OPERACOES.md`](docs/OPERACOES.md) §9; o ganho é só cosmético.
 - **`ItemPromotion` é produto e promoção ao mesmo tempo.** Separar em `Product` +
   `Offer` é migração de dados, planejada e ainda não feita.
 - **Busca usa `LIKE '%termo%'`**, que não usa índice. Correto neste tamanho;

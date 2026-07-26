@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using PharmacyWorkerAPI.DTOs.Analytics;
-using PharmacyWorkerAPI.Services;
+using Storefront.Api.DTOs.Analytics;
+using Storefront.Api.Services;
 
-namespace PharmacyWorkerAPI.Controllers
+namespace Storefront.Api.Controllers
 {
     /// <summary>
     /// Records what was ordered, never who ordered it.

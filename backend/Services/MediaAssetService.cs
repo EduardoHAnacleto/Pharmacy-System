@@ -1,10 +1,10 @@
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Data;
-using PharmacyWorkerAPI.Models;
-using PharmacyWorkerAPI.Utility;
+using Storefront.Api.Data;
+using Storefront.Api.Models;
+using Storefront.Api.Utility;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     public interface IMediaAssetService
     {

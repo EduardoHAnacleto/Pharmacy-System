@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.2.11415.280
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PharmacyWorkerAPI", "PharmacyWorkerAPI.csproj", "{B65A0177-8475-4212-84BB-07FF163336A2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storefront.Api", "Storefront.Api.csproj", "{B65A0177-8475-4212-84BB-07FF163336A2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PharmacyWorkerAPI.Tests", "..\tests\PharmacyWorkerAPI.Tests\PharmacyWorkerAPI.Tests.csproj", "{572DFCD6-E78F-4848-869C-CAF87ED36FD1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storefront.Api.Tests", "..\tests\Storefront.Api.Tests\Storefront.Api.Tests.csproj", "{572DFCD6-E78F-4848-869C-CAF87ED36FD1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

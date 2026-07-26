@@ -1,7 +1,7 @@
 using System.Text.Json;
 using StackExchange.Redis;
 
-namespace PharmacyWorkerAPI.Services;
+namespace Storefront.Api.Services;
 
 /// <summary>
 /// Cache access with scope-versioned keys.

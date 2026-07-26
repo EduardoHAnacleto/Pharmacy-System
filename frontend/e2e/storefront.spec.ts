@@ -58,6 +58,7 @@ function settings(overrides: Record<string, unknown> = {}) {
     mapQuery: null,
     phone: '(45) 3541-0000',
     whatsAppNumber: '5545999975299',
+    whatsAppNumberIsManagedByEnvironment: false,
     email: 'contato@exemplo.com',
     instagramUrl: null,
     facebookUrl: null,

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace PharmacyWorkerAPI.DTOs.Analytics
+namespace Storefront.Api.DTOs.Analytics
 {
     // ===============================
     // INGESTION

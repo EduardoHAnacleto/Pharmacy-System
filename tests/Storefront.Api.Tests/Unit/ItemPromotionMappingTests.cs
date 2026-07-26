@@ -1,8 +1,8 @@
-using PharmacyWorkerAPI.Mapping;
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Mapping;
+using Storefront.Api.Models;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Unit;
+namespace Storefront.Api.Tests.Unit;
 
 public class ItemPromotionMappingTests
 {

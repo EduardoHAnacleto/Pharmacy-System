@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Data;
-using PharmacyWorkerAPI.DTOs;
-using PharmacyWorkerAPI.DTOs.ItemPromotion;
-using PharmacyWorkerAPI.Hubs;
-using PharmacyWorkerAPI.Mapping;
-using PharmacyWorkerAPI.Models;
-using PharmacyWorkerAPI.Utility;
+using Storefront.Api.Data;
+using Storefront.Api.DTOs;
+using Storefront.Api.DTOs.ItemPromotion;
+using Storefront.Api.Hubs;
+using Storefront.Api.Mapping;
+using Storefront.Api.Models;
+using Storefront.Api.Utility;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     /// <summary>Outcome of a write, distinguishing rejection from not-found.</summary>
     public record PromotionResult(

@@ -9,12 +9,9 @@ RUN npm ci
 
 COPY . .
 
-# Build-time configuration. Vite inlines VITE_* variables into the bundle,
-# so these must be declared in this stage — setting them on the nginx stage
-# happens after the build and never reaches the generated JavaScript.
-ARG VITE_WHATSAPP_NUMBER
-ENV VITE_WHATSAPP_NUMBER=$VITE_WHATSAPP_NUMBER
-
+# No build-time configuration. Everything shop-specific — including the WhatsApp
+# number — is fetched from /api/v1/store-settings at runtime, so one image serves
+# every shop and changing a number needs no rebuild.
 RUN npm run build
 
 # =====================

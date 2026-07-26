@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace PharmacyWorkerAPI.Data
+namespace Storefront.Api.Data
 {
     /// <summary>
     /// Builds an <see cref="AppDbContext"/> for the `dotnet ef` tooling.

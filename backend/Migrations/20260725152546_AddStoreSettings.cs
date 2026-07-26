@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace PharmacyWorkerAPI.Migrations
+namespace Storefront.Api.Migrations
 {
     /// <inheritdoc />
     public partial class AddStoreSettings : Migration

@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Data;
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Data;
+using Storefront.Api.Models;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Unit;
+namespace Storefront.Api.Tests.Unit;
 
 /// <summary>
 /// Enforces the privacy boundary against the actual EF model.
@@ -140,7 +140,7 @@ public class NoPersonalDataTests
     {
         // The DTO is the actual gate: a column cannot be filled by a field the API
         // does not accept.
-        var properties = typeof(PharmacyWorkerAPI.DTOs.Analytics.CreateOrderDto)
+        var properties = typeof(Storefront.Api.DTOs.Analytics.CreateOrderDto)
             .GetProperties()
             .Select(p => p.Name.ToLowerInvariant())
             .ToList();

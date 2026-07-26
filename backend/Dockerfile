@@ -5,11 +5,11 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
 COPY *.csproj ./
-RUN dotnet restore PharmacyWorkerAPI.csproj
+RUN dotnet restore Storefront.Api.csproj
 
 COPY . ./
 
-RUN dotnet publish PharmacyWorkerAPI.csproj -c Release -o out
+RUN dotnet publish Storefront.Api.csproj -c Release -o out
 
 # =========================
 # MIGRATION BUNDLE
@@ -26,7 +26,7 @@ ENV PATH="$PATH:/root/.dotnet/tools"
 RUN dotnet tool install --global dotnet-ef --version 9.*
 
 COPY *.csproj ./
-RUN dotnet restore PharmacyWorkerAPI.csproj
+RUN dotnet restore Storefront.Api.csproj
 
 COPY . ./
 
@@ -34,7 +34,7 @@ COPY . ./
 # sits next to the project, and once it contains more than one project every
 # solution-scoped command becomes ambiguous or publishes the wrong thing.
 RUN dotnet ef migrations bundle \
-    --project PharmacyWorkerAPI.csproj \
+    --project Storefront.Api.csproj \
     --self-contained -r linux-x64 \
     --configuration Release \
     -o /app/efbundle
@@ -73,4 +73,4 @@ COPY --from=build /app/out .
 # ASPNETCORE_ENVIRONMENT is intentionally not set here: it defaults to
 # Production. docker-compose.dev.yml overrides it for local development.
 
-ENTRYPOINT ["dotnet", "PharmacyWorkerAPI.dll"]
+ENTRYPOINT ["dotnet", "Storefront.Api.dll"]

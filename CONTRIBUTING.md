@@ -38,7 +38,7 @@ O CI roda exatamente isto. Rodar antes economiza um ciclo:
 # Backend
 cd backend
 dotnet build --configuration Release                  # TreatWarningsAsErrors: warning = erro
-dotnet format PharmacyWorkerAPI.csproj --verify-no-changes
+dotnet format Storefront.Api.csproj --verify-no-changes
 dotnet ef migrations has-pending-model-changes        # modelo tem de casar com as migrations
 dotnet test
 

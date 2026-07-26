@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace PharmacyWorkerAPI.Models
+namespace Storefront.Api.Models
 {
     /// <summary>
     /// A long-lived credential exchanged for short-lived access tokens.

@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using PharmacyWorkerAPI.DTOs.Store;
+using Storefront.Api.DTOs.Store;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Integration;
+namespace Storefront.Api.Tests.Integration;
 
 /// <summary>
 /// The endpoint that makes the project sellable to a second shop.
@@ -124,6 +124,106 @@ public class StoreSettingsEndpointsTests
         var saved = await client.GetFromJsonAsync<StoreSettingsDto>("/api/v1/store-settings");
 
         Assert.Null(saved!.Tagline);
+    }
+
+    // ===============================
+    // WHATSAPP OVERRIDE FROM THE ENVIRONMENT
+    // ===============================
+
+    [SkippableFact]
+    public async Task WhatsAppNumber_FromConfiguration_WinsOverTheStoredRow()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+
+        // Store one number in the row, then bring up a host that configures another.
+        using var seeding = await AuthenticatedClientAsync();
+
+        var update = Valid();
+        update.WhatsAppNumber = "5545999900001";
+        (await seeding.PutAsJsonAsync("/api/v1/store-settings", update)).EnsureSuccessStatusCode();
+
+        using var configured = _fixture
+            .WithWebHostBuilder(b => b.UseSetting("Store:WhatsAppNumber", "6499988877"))
+            .CreateClient();
+
+        var settings = await configured.GetFromJsonAsync<StoreSettingsDto>("/api/v1/store-settings");
+
+        // The environment is authoritative while it is set. Without this the variable
+        // was write-once and inert: changing it after the first boot did nothing,
+        // because the row already existed.
+        Assert.Equal("6499988877", settings!.WhatsAppNumber);
+
+        // Reported so the admin screen can render the field as managed elsewhere,
+        // instead of letting an operator edit a value that cannot take effect.
+        Assert.True(settings.WhatsAppNumberIsManagedByEnvironment);
+    }
+
+    [SkippableFact]
+    public async Task WhatsAppNumber_WithoutConfiguration_ComesFromTheStoredRow()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var update = Valid();
+        update.WhatsAppNumber = "5545999900002";
+
+        var saved = await client.PutAsJsonAsync("/api/v1/store-settings", update);
+        saved.EnsureSuccessStatusCode();
+
+        var settings = await client.GetFromJsonAsync<StoreSettingsDto>("/api/v1/store-settings");
+
+        Assert.Equal("5545999900002", settings!.WhatsAppNumber);
+        Assert.False(settings.WhatsAppNumberIsManagedByEnvironment);
+    }
+
+    [SkippableTheory]
+    [InlineData("+55 (45) 99997-5299")]
+    [InlineData("not-a-number")]
+    [InlineData("123")]
+    public async Task WhatsAppNumber_MalformedConfiguration_IsIgnored(string configured)
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+
+        using var seeding = await AuthenticatedClientAsync();
+
+        var update = Valid();
+        update.WhatsAppNumber = "5545999900003";
+        (await seeding.PutAsJsonAsync("/api/v1/store-settings", update)).EnsureSuccessStatusCode();
+
+        using var client = _fixture
+            .WithWebHostBuilder(b => b.UseSetting("Store:WhatsAppNumber", configured))
+            .CreateClient();
+
+        var settings = await client.GetFromJsonAsync<StoreSettingsDto>("/api/v1/store-settings");
+
+        // A malformed override would produce a wa.me link that silently loses every
+        // order, so it is discarded in favour of the stored value.
+        Assert.Equal("5545999900003", settings!.WhatsAppNumber);
+        Assert.False(settings.WhatsAppNumberIsManagedByEnvironment);
+    }
+
+    [SkippableFact]
+    public async Task WhatsAppNumber_OverrideIsNotBakedIntoTheCache()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+
+        // Warm the cache through a host that has the override configured...
+        using var overridden = _fixture
+            .WithWebHostBuilder(b => b.UseSetting("Store:WhatsAppNumber", "6499911111"))
+            .CreateClient();
+
+        var forced = await overridden.GetFromJsonAsync<StoreSettingsDto>("/api/v1/store-settings");
+        Assert.Equal("6499911111", forced!.WhatsAppNumber);
+
+        // ...then read from one that does not. The override is applied after the
+        // cache, so removing it takes effect on the next read rather than waiting
+        // out the TTL with a stale number.
+        using var plain = _fixture.CreateClient();
+
+        var settings = await plain.GetFromJsonAsync<StoreSettingsDto>("/api/v1/store-settings");
+
+        Assert.NotEqual("6499911111", settings!.WhatsAppNumber);
+        Assert.False(settings.WhatsAppNumberIsManagedByEnvironment);
     }
 
     // ===============================

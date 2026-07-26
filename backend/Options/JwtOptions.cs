@@ -1,4 +1,4 @@
-namespace PharmacyWorkerAPI.Options
+namespace Storefront.Api.Options
 {
     public class JwtOptions
     {

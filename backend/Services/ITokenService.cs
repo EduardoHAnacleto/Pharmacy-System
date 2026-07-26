@@ -1,6 +1,6 @@
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Models;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     public interface ITokenService
     {

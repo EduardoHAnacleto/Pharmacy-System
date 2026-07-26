@@ -182,6 +182,8 @@ export default {
     mapQuery: 'Map search',
     phone: 'Phone',
     whatsAppNumber: 'WhatsApp (digits only, with country code)',
+    whatsAppManaged:
+      'Set by Store__WhatsAppNumber in the environment; editing here has no effect while that variable is set.',
     email: 'Email',
     instagramUrl: 'Instagram',
     facebookUrl: 'Facebook',

@@ -1,11 +1,11 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PharmacyWorkerAPI.DTOs.Store;
-using PharmacyWorkerAPI.Models;
-using PharmacyWorkerAPI.Services;
+using Storefront.Api.DTOs.Store;
+using Storefront.Api.Models;
+using Storefront.Api.Services;
 
-namespace PharmacyWorkerAPI.Controllers
+namespace Storefront.Api.Controllers
 {
     /// <summary>
     /// The shop's own configuration: branding, contact, commerce rules, hours.

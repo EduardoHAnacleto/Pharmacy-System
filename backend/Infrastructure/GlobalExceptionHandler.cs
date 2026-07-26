@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace PharmacyWorkerAPI.Infrastructure
+namespace Storefront.Api.Infrastructure
 {
     /// <summary>
     /// Turns any unhandled exception into a ProblemDetails response.

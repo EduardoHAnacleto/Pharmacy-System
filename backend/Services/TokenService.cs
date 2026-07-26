@@ -5,10 +5,10 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using PharmacyWorkerAPI.Models;
-using PharmacyWorkerAPI.Options;
+using Storefront.Api.Models;
+using Storefront.Api.Options;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     public class TokenService : ITokenService
     {

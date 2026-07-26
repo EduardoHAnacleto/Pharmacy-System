@@ -121,7 +121,13 @@
                 class="form-control"
                 inputmode="numeric"
                 maxlength="20"
+                :readonly="whatsAppManaged"
               />
+              <!-- Said plainly rather than left to be discovered: editing a field
+                   that has no effect reads as a broken save. -->
+              <small v-if="whatsAppManaged" class="form-text text-warning">
+                {{ t('admin.whatsAppManaged') }}
+              </small>
             </div>
 
             <div class="col-md-4">
@@ -346,6 +352,9 @@ const settings = useSettingsStore()
 const weekdays = [1, 2, 3, 4, 5, 6, 7]
 
 const form = reactive<StoreSettings>(clone(settings.settings))
+
+/** Whether Store:WhatsAppNumber in the environment is overriding the stored row. */
+const whatsAppManaged = computed(() => settings.settings.whatsAppNumberIsManagedByEnvironment)
 
 const saving = ref(false)
 const saved = ref(false)

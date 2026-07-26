@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
-using PharmacyWorkerAPI.DTOs.ItemPromotion;
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.DTOs.ItemPromotion;
+using Storefront.Api.Models;
 
-namespace PharmacyWorkerAPI.Mapping
+namespace Storefront.Api.Mapping
 {
     /// <summary>
     /// The single definition of how a promotion becomes a response.

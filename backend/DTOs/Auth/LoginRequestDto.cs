@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace PharmacyWorkerAPI.DTOs.Auth
+namespace Storefront.Api.DTOs.Auth
 {
     public class LoginRequestDto
     {

@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace PharmacyWorkerAPI.DTOs.ItemPromotion
+namespace Storefront.Api.DTOs.ItemPromotion
 {
     /// <summary>Sort orders the storefront grid offers.</summary>
     public static class PromotionSort

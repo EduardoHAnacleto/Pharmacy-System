@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Data;
+using Storefront.Api.Data;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     public interface IExportService
     {

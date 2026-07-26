@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     /// <summary>
     /// PBKDF2-HMAC-SHA256 password hashing, the same primitive ASP.NET Core

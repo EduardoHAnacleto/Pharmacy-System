@@ -131,7 +131,7 @@ Baixo risco, alto retorno. Um PR único, sem mudança de comportamento visível 
 ### Git e limpeza
 
 - `git mv .git.ignore .gitignore` — o conteúdo já está correto e ignora exatamente o que precisa.
-- `git rm -r --cached backend/obj backend/.vs backend/PharmacyWorkerAPI.csproj.user .env .env.development frontend/.env` e apagar o arquivo lixo `frontend/console.log(r.headers.get(access-control-allow-origin)))`.
+- `git rm -r --cached backend/obj backend/.vs backend/Storefront.Api.csproj.user .env .env.development frontend/.env` e apagar o arquivo lixo `frontend/console.log(r.headers.get(access-control-allow-origin)))`.
 - Criar `.env.example` com os nomes das variáveis e valores vazios (o `.gitignore` já traz a exceção `!.env.example`). **Rotacionar as senhas em produção**, já que estiveram versionadas.
 - Remover deps não usadas: `AWSSDK.*` e `Newtonsoft.Json` do `.csproj`; `boostrap`, `cors`, `multer` do `package.json`; `using static System.Net.WebRequestMethods;` (`Program.cs:8`).
 - Apagar código morto: `views/LoginView.vue`, `components/PromotionList.vue`, `stores/products.ts`, `services/productService.ts`, `services/promotionService.ts`, `models/ItemPromotion.ts`, `Models/ProductType.cs`, a propriedade `ProductType` de `AppDbContext.cs:14`, os 5 ícones de scaffold, e os `console.log` de debug em `useInfinitePromotions.ts:25` e `router/index.ts:47`. **`stores/auth.ts` não apagar** — vira a fonte de verdade na Fase 1.
@@ -530,7 +530,7 @@ O frontend carrega no bootstrap e aplica branding via **CSS custom properties** 
 
 Completar o split iniciado na Fase 4: popular `products`, ligar `offers.product_id`, e o `attributes JSON` permitir campos por vertical (farmácia, padaria, autopeças) sem migration. `ProductType` (classe órfã hoje) volta como `Category` hierárquica ou enum real.
 
-Renomear `PharmacyWorkerAPI` → nome neutro (`Storefront.Api`) num PR isolado, puramente mecânico.
+Renomear `Storefront.Api` → nome neutro (`Storefront.Api`) num PR isolado, puramente mecânico.
 
 ### 6.3 i18n e locale
 
@@ -558,7 +558,7 @@ Renomear `PharmacyWorkerAPI` → nome neutro (`Storefront.Api`) num PR isolado, 
 - Substituir `frontend/README.md` (scaffold intocado do Vite) por instruções reais; documentar o fluxo local sem Docker (`dotnet run` + `npm run dev`), hoje não escrito em lugar nenhum.
 - `docs/` com diagrama C4 nível 2, **modelo de dados** (as tabelas das Fases 4–5 merecem um ER diagram), e **ADRs curtas**: por que JWT, por que white-label antes de multi-tenant, por que WhatsApp em vez de pagamento on-line, por que analytics sem PII, por que arquivar em vez de deletar. ADRs são sinal forte de senioridade em revisão de portfólio.
 - `LICENSE`, `CONTRIBUTING.md`, `CHANGELOG.md`.
-- XML docs no backend (hoje `grep '///'` → 0) alimentando o Swagger com descrições e exemplos. Substituir `PharmacyWorkerAPI.http`, que ainda tem só o `GET /weatherforecast` do scaffold.
+- XML docs no backend (hoje `grep '///'` → 0) alimentando o Swagger com descrições e exemplos. Substituir `Storefront.Api.http`, que ainda tem só o `GET /weatherforecast` do scaffold.
 - **Observabilidade**: Serilog estruturado (Fase 3), OpenTelemetry (traces + métricas), `/health` (Fase 2), e opcionalmente Prometheus + Grafana no compose — o `README_DEPLOY.md` já os menciona como opcionais.
 - **Documento de privacidade**: página curta declarando o que é e o que não é coletado. Com a Fase 5 no ar, isso deixa de ser opcional e passa a ser argumento de venda.
 
@@ -652,7 +652,7 @@ Lighthouse ≥ 90 em Performance, SEO e Accessibility. Colar a URL no WhatsApp e
 | Imagens já perdidas por **B1** antes da correção | A migração marca os assets ausentes e o admin lista "N anúncios sem imagem" para recuperação manual. Quanto mais cedo a Fase 0, menos perda |
 | `analytics_events` crescer sem controle | Rollup diário + purga do bruto com retenção configurável; `analytics_daily` é a fonte de relatório |
 | Persistir pedido pode virar PII por acidente | O DTO de `POST /orders` **não tem** campos de pessoa; teste automatizado assertando que as tabelas não contêm colunas de PII |
-| Renomear `PharmacyWorkerAPI` toca todos os namespaces | PR mecânico isolado, revisado por diff de rename |
+| Renomear `Storefront.Api` toca todos os namespaces | PR mecânico isolado, revisado por diff de rename |
 | Multi-tenant no modelo desde já vira over-engineering | Etapa A (1 stack por cliente) entrega o valor comercial; Etapa B só sob demanda |
 | `.env` versionado com senhas | Rotacionar em produção; decidir sobre reescrita de histórico |
 
@@ -660,24 +660,64 @@ Lighthouse ≥ 90 em Performance, SEO e Accessibility. Colar a URL no WhatsApp e
 
 ## 7. Decisões pendentes
 
-Duas foram implementadas na recomendação, e continuam reversíveis; três dependem de
-você e não de código.
+Todas as cinco foram decididas. Nenhuma continua aberta.
 
-| # | Decisão | Estado |
+| # | Decisão | Resolução |
 |---|---|---|
-| 1 | **Correlação de sessão para o funil** (§5.1) | **Implementada como recomendado:** chave aleatória em `sessionStorage`, morre com a aba, descartada no rollup. Sem ela existem contadores, mas não taxa de conversão |
-| 2 | **`orders.delivery_city`** | **Implementada mantendo a cidade.** Útil para análise de cobertura e não identifica ninguém. Remover é uma migration de uma coluna |
-| 3 | **Expurgar `.env` do histórico** do git (`git filter-repo`) | **Sua decisão.** Removido do HEAD; o histórico ainda contém as senhas antigas. Independente disso, **as credenciais precisam ser rotacionadas** |
-| 4 | **Renomear o projeto** (`PharmacyWorkerAPI` → algo neutro) | **Sua decisão.** Puramente mecânico, e toca todos os namespaces: merece um PR isolado, revisável por diff de rename |
-| 5 | **Retenção do bruto de `analytics_events`** | **90 dias** como default configurável. Confirmar ou ajustar |
+| 1 | **Correlação de sessão para o funil** (§5.1) | **Chave efêmera em `sessionStorage`**, como recomendado: morre com a aba e é descartada no rollup. Sem ela existem contadores, mas não taxa de conversão |
+| 2 | **`orders.delivery_city`** | **Mantida.** Útil para análise de cobertura e não identifica ninguém |
+| 3 | **Expurgar `.env` do histórico** | **Não expurgar.** Removido do HEAD e as credenciais rotacionadas. O histórico continua com as senhas antigas, que a rotação torna inúteis — reescrever o histórico invalidaria todo clone e fork por um ganho que a rotação já entrega |
+| 4 | **Renomear o projeto** | **Feito:** `PharmacyWorkerAPI` → **`Storefront.Api`** |
+| 5 | **Retenção do bruto de `analytics_events`** | **90 dias**, configurável em `ANALYTICS_RAW_RETENTION_DAYS`. Longo o bastante para comparar uma promoção com o mesmo mês do trimestre anterior; curto o bastante para a tabela bruta nunca ser a maior coisa no banco. Os relatórios leem `analytics_daily`, que não é purgado |
+
+### O que o rename tocou, e o que não tocou
+
+Renomeado: namespaces `Storefront.Api.*`, `Storefront.Api.csproj`, `.sln`, `.http`,
+`tests/Storefront.Api.Tests/`, os containers (`storefront_api`, `storefront_db`, …),
+a rede (`storefront_network`) e as imagens do GHCR
+(`storefront-backend`, `storefront-migrator`, `storefront-frontend`).
+
+**Não** renomeado, de propósito:
+
+- **`name: pharmacy-system` no `docker-compose.yml`.** Esse nome prefixa os volumes:
+  `db_data` é `pharmacy-system_db_data` no disco. Trocá-lo deixaria o banco, o
+  appendonly do Redis e as imagens enviadas órfãos atrás do prefixo antigo, e a
+  stack subiria vazia — perda de dados disfarçada de rename. Quem quiser trocar
+  precisa migrar os volumes primeiro; o procedimento está em
+  [`OPERACOES.md`](OPERACOES.md).
+- **`MYSQL_DATABASE` (`pharmacy_db`).** É o nome do banco de uma instalação
+  existente. Trocar não tem ganho nenhum e tem o mesmo risco.
+
+> ⚠️ **Consequência de deploy:** as imagens no GHCR mudaram de nome. O primeiro
+> deploy depois do merge precisa de `docker compose up --build`, ou de esperar o
+> `docker.yml` publicar as tags `storefront-*` — `docker compose pull` não vai
+> encontrar as antigas.
+
+### Número do WhatsApp: agora um override de runtime
+
+`STORE_WHATSAPP_NUMBER` deixou de ser apenas semente. Quando definida, ela **vence
+sobre a linha do banco em toda leitura** de `GET /api/v1/store-settings`; vazia, o
+número é gerenciado em `/admin/settings`.
+
+Antes, a variável era write-once e silenciosamente inerte: mudá-la no `.env` e
+reiniciar não fazia nada, porque a linha já existia. Também não é build-time — nada
+sobre o número entra no bundle, então trocar exige reiniciar o backend e nada mais.
+Um valor que não tenha de 8 a 20 dígitos é ignorado com aviso no log, em vez de
+gerar um link `wa.me` quebrado que custaria todos os pedidos em silêncio. A tela de
+admin mostra o campo como somente-leitura e diz que o ambiente é o dono.
+
+O `VITE_WHATSAPP_NUMBER` e todo o encanamento de build arg que ninguém lia foram
+removidos.
 
 ### Ações do seu lado, antes de subir em produção
 
-1. **Rotacionar** `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD` e `REDIS_PASSWORD` — estiveram versionados.
+1. **Rotacionar** `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD` e `REDIS_PASSWORD` — estiveram versionados. É a mitigação escolhida em vez de reescrever o histórico, então é obrigatória, não opcional.
 2. Definir `JWT_SIGNING_KEY` (32+ caracteres; `openssl rand -base64 48`) e `ADMIN_SEED_USERNAME`/`ADMIN_SEED_PASSWORD`.
 3. Aplicar o baseline de `database/upgrades/` **numa base criada antes das migrations**, uma vez.
-4. Abrir `/admin/settings` e preencher a configuração da loja — inclusive `logoUrl` (`/logoFarma.png` recupera a arte atual, que agora vive em `frontend/public/`).
-5. Configurar branch protection exigindo CI verde (precisa de permissão de admin no repositório).
+4. Definir `STORE_WHATSAPP_NUMBER` (só dígitos), ou deixar vazio e gerenciar em `/admin/settings`.
+5. Abrir `/admin/settings` e preencher o resto — inclusive `logoUrl` (`/logoFarma.png` recupera a arte atual, que agora vive em `frontend/public/`).
+6. Primeiro deploy com `docker compose up --build`, por causa do rename das imagens.
+7. Configurar branch protection exigindo CI verde (precisa de permissão de admin no repositório).
 
 ---
 

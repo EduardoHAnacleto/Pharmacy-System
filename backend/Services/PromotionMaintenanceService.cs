@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Data;
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Data;
+using Storefront.Api.Models;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     /// <summary>
     /// Periodically writes down status transitions that time causes.

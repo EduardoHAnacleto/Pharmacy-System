@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Models;
 
-namespace PharmacyWorkerAPI.Hubs
+namespace Storefront.Api.Hubs
 {
     /// <summary>
     /// Pushes promotion changes to connected storefronts.

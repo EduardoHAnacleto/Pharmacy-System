@@ -1,4 +1,4 @@
-namespace PharmacyWorkerAPI.Models
+namespace Storefront.Api.Models
 {
     /// <summary>
     /// Lifecycle of a promotion.

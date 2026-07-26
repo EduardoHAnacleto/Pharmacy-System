@@ -183,6 +183,8 @@ export default {
     mapQuery: 'Busca no mapa',
     phone: 'Telefone',
     whatsAppNumber: 'WhatsApp (apenas dígitos, com DDI)',
+    whatsAppManaged:
+      'Definido por Store__WhatsAppNumber no ambiente; a edição aqui não tem efeito enquanto a variável estiver definida.',
     email: 'E-mail',
     instagramUrl: 'Instagram',
     facebookUrl: 'Facebook',

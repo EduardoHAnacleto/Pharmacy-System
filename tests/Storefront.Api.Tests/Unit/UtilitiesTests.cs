@@ -1,7 +1,7 @@
-using PharmacyWorkerAPI.Utility;
+using Storefront.Api.Utility;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Unit;
+namespace Storefront.Api.Tests.Unit;
 
 public class UtilitiesTests
 {

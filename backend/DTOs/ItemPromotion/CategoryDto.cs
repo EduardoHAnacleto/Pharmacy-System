@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace PharmacyWorkerAPI.DTOs.ItemPromotion
+namespace Storefront.Api.DTOs.ItemPromotion
 {
     /// <summary>Create or rename a category.</summary>
     public class CategoryWriteDto

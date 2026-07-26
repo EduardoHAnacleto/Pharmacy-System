@@ -1,4 +1,4 @@
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     public interface IPasswordHasher
     {

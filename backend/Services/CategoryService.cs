@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Data;
-using PharmacyWorkerAPI.DTOs.ItemPromotion;
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Data;
+using Storefront.Api.DTOs.ItemPromotion;
+using Storefront.Api.Models;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     /// <summary>Outcome of a category write.</summary>
     public record CategoryResult(

@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using PharmacyWorkerAPI.DTOs.Auth;
-using PharmacyWorkerAPI.Services;
+using Storefront.Api.DTOs.Auth;
+using Storefront.Api.Services;
 
-namespace PharmacyWorkerAPI.Controllers
+namespace Storefront.Api.Controllers
 {
     [ApiController]
     [Route("api/v1/auth")]

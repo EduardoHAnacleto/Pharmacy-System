@@ -1,4 +1,4 @@
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     /// <summary>
     /// File storage for promotion images. Knows nothing about promotions or

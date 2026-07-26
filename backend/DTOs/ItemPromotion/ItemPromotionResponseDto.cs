@@ -1,4 +1,4 @@
-namespace PharmacyWorkerAPI.DTOs.ItemPromotion
+namespace Storefront.Api.DTOs.ItemPromotion
 {
     public class ItemPromotionResponseDto
     {

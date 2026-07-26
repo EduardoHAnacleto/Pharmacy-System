@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\backend\PharmacyWorkerAPI.csproj" />
+    <ProjectReference Include="..\..\backend\Storefront.Api.csproj" />
   </ItemGroup>
 
 </Project>

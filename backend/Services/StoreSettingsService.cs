@@ -1,10 +1,10 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Data;
-using PharmacyWorkerAPI.DTOs.Store;
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Data;
+using Storefront.Api.DTOs.Store;
+using Storefront.Api.Models;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     public interface IStoreSettingsService
     {
@@ -38,26 +38,90 @@ namespace PharmacyWorkerAPI.Services
         private readonly AppDbContext _context;
         private readonly RedisService _cache;
         private readonly IAuditLogger _audit;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<StoreSettingsService> _logger;
 
         public StoreSettingsService(
             AppDbContext context,
             RedisService cache,
             IAuditLogger audit,
+            IConfiguration configuration,
             ILogger<StoreSettingsService> logger)
         {
             _context = context;
             _cache = cache;
             _audit = audit;
+            _configuration = configuration;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// The WhatsApp number forced by configuration, if any.
+        /// </summary>
+        /// <remarks>
+        /// <c>Store:WhatsAppNumber</c> has two jobs. The seeder uses it once to
+        /// populate a fresh row; from then on it acts as an override that wins over
+        /// whatever the row holds, on every read.
+        /// <para>
+        /// Without the override the variable was write-once and silently inert:
+        /// changing it in <c>.env</c> and restarting did nothing, because the row
+        /// already existed. Now the environment is authoritative whenever it is set,
+        /// which is what makes putting the number in <c>.env</c> actually useful.
+        /// </para>
+        /// <para>
+        /// This is runtime, not build time. Nothing about the number is baked into
+        /// the frontend bundle, so changing it needs a restart of the API and no
+        /// rebuild of anything.
+        /// </para>
+        /// </remarks>
+        private string? WhatsAppOverride
+        {
+            get
+            {
+                var configured = _configuration["Store:WhatsAppNumber"]?.Trim();
+
+                // Digits only, matching what the admin screen accepts. A malformed
+                // value is ignored rather than propagated into a broken wa.me link
+                // that would silently cost every order.
+                if (string.IsNullOrEmpty(configured))
+                    return null;
+
+                if (!configured.All(char.IsAsciiDigit) || configured.Length is < 8 or > 20)
+                {
+                    _logger.LogWarning(
+                        "Store:WhatsAppNumber is set but not 8-20 digits; ignoring it and "
+                        + "using the value from store_settings.");
+                    return null;
+                }
+
+                return configured;
+            }
         }
 
         // ===============================
         // READ
         // ===============================
-        public Task<StoreSettingsDto> GetAsync(CancellationToken ct = default) =>
-            _cache.GetOrSetAsync(CacheScope, "current", CacheTtl, async () =>
+
+        /// <remarks>
+        /// The override is applied after the cache, not before it: baking it into the
+        /// cached entry would mean a restart with a new value still served the old one
+        /// until the TTL expired.
+        /// </remarks>
+        public async Task<StoreSettingsDto> GetAsync(CancellationToken ct = default)
+        {
+            var dto = await _cache.GetOrSetAsync(CacheScope, "current", CacheTtl, async () =>
                 ToDto(await LoadAsync(ct)));
+
+            var forced = WhatsAppOverride;
+
+            if (forced != null)
+            {
+                dto.WhatsAppNumber = forced;
+                dto.WhatsAppNumberIsManagedByEnvironment = true;
+            }
+
+            return dto;
+        }
 
         public Task<StoreSettings> GetEntityAsync(CancellationToken ct = default) => LoadAsync(ct);
 
@@ -143,7 +207,20 @@ namespace PharmacyWorkerAPI.Services
                 $"Loja \"{settings.StoreName}\", moeda {settings.Currency}, idioma {settings.Locale}",
                 ct);
 
-            return ToDto(settings);
+            var dto = ToDto(settings);
+
+            // The row keeps whatever was submitted, but the response has to show what
+            // the storefront will actually use — otherwise the operator saves a number
+            // and the screen echoes it back while every wa.me link uses another one.
+            var forced = WhatsAppOverride;
+
+            if (forced != null)
+            {
+                dto.WhatsAppNumber = forced;
+                dto.WhatsAppNumberIsManagedByEnvironment = true;
+            }
+
+            return dto;
         }
 
         // ===============================

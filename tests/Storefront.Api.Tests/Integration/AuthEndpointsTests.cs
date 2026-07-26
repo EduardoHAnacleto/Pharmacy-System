@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
-using PharmacyWorkerAPI.DTOs.Auth;
+using Storefront.Api.DTOs.Auth;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Integration;
+namespace Storefront.Api.Tests.Integration;
 
 [Collection(ApiCollection.Name)]
 public class AuthEndpointsTests

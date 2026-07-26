@@ -37,7 +37,7 @@ jobs:
 
       # A solution file sits next to the project, so the workspace is explicit.
       - name: Format
-        run: dotnet format PharmacyWorkerAPI.csproj --no-restore --verify-no-changes
+        run: dotnet format Storefront.Api.csproj --no-restore --verify-no-changes
         working-directory: backend
 
       # Catches a model change committed without its migration, which would

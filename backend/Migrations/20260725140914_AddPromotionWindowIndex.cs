@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace PharmacyWorkerAPI.Migrations
+namespace Storefront.Api.Migrations
 {
     /// <inheritdoc />
     public partial class AddPromotionWindowIndex : Migration

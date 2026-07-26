@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Data;
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Data;
+using Storefront.Api.Models;
 
-namespace PharmacyWorkerAPI.Services
+namespace Storefront.Api.Services
 {
     /// <summary>
     /// Populates reference data and the first admin account on startup.

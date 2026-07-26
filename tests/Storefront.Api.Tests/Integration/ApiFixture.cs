@@ -2,12 +2,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using PharmacyWorkerAPI.Data;
+using Storefront.Api.Data;
 using Testcontainers.MySql;
 using Testcontainers.Redis;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Integration;
+namespace Storefront.Api.Tests.Integration;
 
 /// <summary>
 /// Boots the real API against throwaway MySQL and Redis containers.

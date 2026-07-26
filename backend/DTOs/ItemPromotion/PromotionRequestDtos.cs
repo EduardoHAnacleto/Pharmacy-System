@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace PharmacyWorkerAPI.DTOs.ItemPromotion
+namespace Storefront.Api.DTOs.ItemPromotion
 {
     /// <summary>Fields shared by create and update.</summary>
     public abstract class PromotionWriteRequestDto

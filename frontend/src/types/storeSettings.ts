@@ -29,6 +29,15 @@ export interface StoreSettings {
 
   phone: string | null
   whatsAppNumber: string | null
+
+  /**
+   * True when the API is overriding the stored number from `Store:WhatsAppNumber`.
+   *
+   * Read-only: the admin screen shows the field as managed elsewhere rather than
+   * letting an operator edit a value that will not take effect.
+   */
+  whatsAppNumberIsManagedByEnvironment: boolean
+
   email: string | null
   instagramUrl: string | null
   facebookUrl: string | null
@@ -79,6 +88,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
 
   phone: null,
   whatsAppNumber: null,
+  whatsAppNumberIsManagedByEnvironment: false,
   email: null,
   instagramUrl: null,
   facebookUrl: null,

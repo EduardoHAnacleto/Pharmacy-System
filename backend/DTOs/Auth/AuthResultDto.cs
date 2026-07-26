@@ -1,4 +1,4 @@
-namespace PharmacyWorkerAPI.DTOs.Auth
+namespace Storefront.Api.DTOs.Auth
 {
     /// <summary>
     /// What the browser is allowed to see after a successful login.

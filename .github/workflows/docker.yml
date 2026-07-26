@@ -49,7 +49,7 @@ jobs:
         id: image
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "ref=ghcr.io/$owner/pharmacy-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
+          echo "ref=ghcr.io/$owner/storefront-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/metadata-action@v5
         id: meta
@@ -66,11 +66,8 @@ jobs:
         with:
           context: ${{ matrix.context }}
           target: ${{ matrix.target }}
-          # Vite inlines this at build time, so it is baked per image. Leave the
-          # repository variable unset and the bundle falls back to its default.
-          # Phase 6 moves it to runtime store settings, where it belongs.
-          build-args: |
-            VITE_WHATSAPP_NUMBER=${{ vars.VITE_WHATSAPP_NUMBER }}
+          # No build args: the frontend image is shop-agnostic. Anything specific to
+          # a shop comes from store_settings at runtime.
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -1,4 +1,4 @@
-namespace PharmacyWorkerAPI.Utility
+namespace Storefront.Api.Utility
 {
     /// <summary>
     /// Identifies image formats from their leading bytes.

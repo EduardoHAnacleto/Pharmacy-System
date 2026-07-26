@@ -102,6 +102,23 @@ configurável para qualquer loja. Implementado em fases; ver
 
 ### Alterado
 
+- **Projeto renomeado de `PharmacyWorkerAPI` para `Storefront.Api`** — namespaces,
+  csproj, solução, projeto de testes, containers, rede e imagens do GHCR
+  (`storefront-backend`, `storefront-migrator`, `storefront-frontend`).
+  **Consequência de deploy:** as tags antigas do GHCR não existem mais, então o
+  primeiro deploy precisa de `docker compose up --build`.
+  `name: pharmacy-system` no compose **não** mudou: ele prefixa os volumes, e
+  trocá-lo sem migrar os dados subiria a stack vazia (procedimento em
+  `docs/OPERACOES.md` §9).
+- **`STORE_WHATSAPP_NUMBER` virou override de runtime.** Antes era semente
+  write-once e silenciosamente inerte — mudá-la depois da primeira subida não fazia
+  nada, porque a linha já existia. Agora, quando definida, vence sobre o banco em
+  toda leitura; vazia, o número é gerenciado em `/admin/settings`. Continua sendo
+  runtime: nada entra no bundle, e trocar exige só reiniciar o backend. Um valor
+  fora de 8–20 dígitos é ignorado com aviso, em vez de gerar um `wa.me` quebrado
+  que perderia todos os pedidos em silêncio.
+- Retenção do bruto de `analytics_events` fixada em **90 dias**, em
+  `ANALYTICS_RAW_RETENTION_DAYS`.
 - Camada de serviço: o controller ficou só com HTTP. As **seis projeções duplicadas**
   do DTO viraram um mapeamento único — a do `POST` era a única que não prefixava a
   URL da imagem, então o create devolvia formato diferente de todos os gets.

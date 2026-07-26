@@ -1,12 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
-using PharmacyWorkerAPI.Models;
-using PharmacyWorkerAPI.Options;
-using PharmacyWorkerAPI.Services;
+using Storefront.Api.Models;
+using Storefront.Api.Options;
+using Storefront.Api.Services;
 using Xunit;
 
-namespace PharmacyWorkerAPI.Tests.Unit;
+namespace Storefront.Api.Tests.Unit;
 
 public class TokenServiceTests
 {

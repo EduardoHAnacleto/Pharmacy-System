@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Models;
+using Storefront.Api.Models;
 
-namespace PharmacyWorkerAPI.Data
+namespace Storefront.Api.Data
 {
     public class AppDbContext : DbContext
     {

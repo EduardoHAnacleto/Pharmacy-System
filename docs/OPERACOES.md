@@ -230,3 +230,78 @@ docker compose up -d
 Trocar `JWT_SIGNING_KEY` invalida todos os access e refresh tokens emitidos —
 efeito prático: todos os admins são deslogados. É o procedimento correto se
 houver suspeita de vazamento da chave.
+
+**A rotação é a mitigação escolhida para o `.env` versionado**, em vez de reescrever
+o histórico do git. Foi uma decisão consciente
+([`PLANO_DE_MELHORIAS.md` §7](PLANO_DE_MELHORIAS.md#7-decisões-pendentes)): as senhas
+antigas continuam no histórico, e a rotação as torna inúteis, sem invalidar todo
+clone e fork do repositório. Isso torna os passos acima **obrigatórios**, não
+recomendados.
+
+---
+
+## 8. Número do WhatsApp
+
+Há dois lugares de onde o número pode vir, e a precedência é fixa:
+
+| `STORE_WHATSAPP_NUMBER` | Quem manda |
+|---|---|
+| definida | **O ambiente.** Vence sobre a linha do banco em toda leitura. A tela de admin mostra o campo somente-leitura e diz que o ambiente é o dono |
+| vazia | **`/admin/settings`.** A lojista muda sozinha, sem tocar em servidor |
+
+Trocar pelo ambiente:
+
+```bash
+# .env — só dígitos, com DDI. Sem +, espaços, parênteses ou hífens.
+STORE_WHATSAPP_NUMBER=5545999975299
+
+docker compose up -d backend      # reinicia a API; nada é reconstruído
+```
+
+É runtime, não build time: nada sobre o número entra no bundle do frontend, então
+não há `--build` nem republicação de imagem. O override é aplicado **depois** do
+cache, então remover a variável passa a valer na leitura seguinte, sem esperar o TTL.
+
+Um valor que não tenha de 8 a 20 dígitos é **ignorado** com um aviso no log e o
+número do banco é usado. É deliberado: um `wa.me` malformado não dá erro visível —
+apenas perde todos os pedidos em silêncio.
+
+`VITE_WHATSAPP_NUMBER` não existe mais. Era build-time, ficava assado na imagem, e
+nenhum código o lia.
+
+---
+
+## 9. Renomear o projeto do compose (opcional, e perigoso)
+
+`docker-compose.yml` ainda declara `name: pharmacy-system` embora o resto do projeto
+seja `Storefront.Api`. Não é descuido: esse nome **prefixa todos os volumes**.
+
+```bash
+docker volume ls | grep pharmacy-system
+# pharmacy-system_db_data
+# pharmacy-system_redis_data
+# pharmacy-system_promotion_images
+```
+
+Mudar `name:` faz o compose procurar `storefront_db_data`, não encontrar, e criar um
+volume vazio — banco sem tabelas, imagens sumidas, e os dados antigos órfãos no
+disco. **Só faça isso com os volumes migrados antes:**
+
+```bash
+docker compose down                       # sem -v, que apagaria os volumes
+
+for v in db_data redis_data promotion_images; do
+  docker volume create "storefront_$v"
+  docker run --rm \
+    -v "pharmacy-system_$v":/from \
+    -v "storefront_$v":/to \
+    alpine sh -c 'cd /from && cp -a . /to'
+done
+
+# só então edite name: no docker-compose.yml
+docker compose up -d
+```
+
+Confira que a vitrine lista promoções e que as imagens carregam **antes** de remover
+os volumes antigos. Não há ganho funcional nenhum nessa mudança — é cosmética, e o
+modo de falha é perda de dados. Deixar como está é uma resposta perfeitamente boa.

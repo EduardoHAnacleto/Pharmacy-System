@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace PharmacyWorkerAPI.DTOs.Store
+namespace Storefront.Api.DTOs.Store
 {
     /// <summary>
     /// The shop's configuration as the storefront consumes it.
@@ -27,6 +27,18 @@ namespace PharmacyWorkerAPI.DTOs.Store
 
         public string? Phone { get; set; }
         public string? WhatsAppNumber { get; set; }
+
+        /// <summary>
+        /// True when <c>Store:WhatsAppNumber</c> is set and overriding the stored row.
+        /// </summary>
+        /// <remarks>
+        /// Reported so the admin screen can show the field as managed elsewhere. An
+        /// operator who edits a field and sees no effect concludes the save is broken;
+        /// telling them the environment owns it is the difference between a
+        /// configuration choice and a bug report.
+        /// </remarks>
+        public bool WhatsAppNumberIsManagedByEnvironment { get; set; }
+
         public string? Email { get; set; }
         public string? InstagramUrl { get; set; }
         public string? FacebookUrl { get; set; }

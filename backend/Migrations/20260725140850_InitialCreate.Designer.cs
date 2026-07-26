@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using PharmacyWorkerAPI.Data;
+using Storefront.Api.Data;
 
 #nullable disable
 
-namespace PharmacyWorkerAPI.Migrations
+namespace Storefront.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260725140850_InitialCreate")]
@@ -25,7 +25,7 @@ namespace PharmacyWorkerAPI.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("PharmacyWorkerAPI.Models.Category", b =>
+            modelBuilder.Entity("Storefront.Api.Models.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -49,7 +49,7 @@ namespace PharmacyWorkerAPI.Migrations
                     b.ToTable("categories", (string)null);
                 });
 
-            modelBuilder.Entity("PharmacyWorkerAPI.Models.ItemPromotion", b =>
+            modelBuilder.Entity("Storefront.Api.Models.ItemPromotion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -123,7 +123,7 @@ namespace PharmacyWorkerAPI.Migrations
                     b.ToTable("item_promotions", (string)null);
                 });
 
-            modelBuilder.Entity("PharmacyWorkerAPI.Models.RefreshToken", b =>
+            modelBuilder.Entity("Storefront.Api.Models.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -165,7 +165,7 @@ namespace PharmacyWorkerAPI.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
-            modelBuilder.Entity("PharmacyWorkerAPI.Models.User", b =>
+            modelBuilder.Entity("Storefront.Api.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -217,9 +217,9 @@ namespace PharmacyWorkerAPI.Migrations
                     b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("PharmacyWorkerAPI.Models.ItemPromotion", b =>
+            modelBuilder.Entity("Storefront.Api.Models.ItemPromotion", b =>
                 {
-                    b.HasOne("PharmacyWorkerAPI.Models.Category", "Category")
+                    b.HasOne("Storefront.Api.Models.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -228,9 +228,9 @@ namespace PharmacyWorkerAPI.Migrations
                     b.Navigation("Category");
                 });
 
-            modelBuilder.Entity("PharmacyWorkerAPI.Models.RefreshToken", b =>
+            modelBuilder.Entity("Storefront.Api.Models.RefreshToken", b =>
                 {
-                    b.HasOne("PharmacyWorkerAPI.Models.User", "User")
+                    b.HasOne("Storefront.Api.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

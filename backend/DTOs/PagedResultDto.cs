@@ -1,4 +1,4 @@
-namespace PharmacyWorkerAPI.DTOs
+namespace Storefront.Api.DTOs
 {
     public class PagedResultDto<T>
     {

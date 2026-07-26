@@ -1,4 +1,4 @@
-namespace PharmacyWorkerAPI.Options
+namespace Storefront.Api.Options
 {
     /// <summary>
     /// Login throttling, configurable so an operator can tune it without a rebuild.

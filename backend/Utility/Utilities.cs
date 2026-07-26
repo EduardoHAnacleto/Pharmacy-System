@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace PharmacyWorkerAPI.Utility
+namespace Storefront.Api.Utility
 {
     public static class Utilities
     {

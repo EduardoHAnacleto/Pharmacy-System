@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using PharmacyWorkerAPI.DTOs.Analytics;
-using PharmacyWorkerAPI.Models;
-using PharmacyWorkerAPI.Services;
+using Storefront.Api.DTOs.Analytics;
+using Storefront.Api.Models;
+using Storefront.Api.Services;
 
-namespace PharmacyWorkerAPI.Controllers
+namespace Storefront.Api.Controllers
 {
     /// <summary>
     /// Storefront telemetry and the reports built from it.

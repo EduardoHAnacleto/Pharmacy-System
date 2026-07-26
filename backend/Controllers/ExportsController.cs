@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PharmacyWorkerAPI.Models;
-using PharmacyWorkerAPI.Services;
+using Storefront.Api.Models;
+using Storefront.Api.Services;
 
-namespace PharmacyWorkerAPI.Controllers
+namespace Storefront.Api.Controllers
 {
     /// <summary>
     /// CSV export of the measurable data, for analysis outside the system.
