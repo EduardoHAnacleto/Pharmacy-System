@@ -1,438 +1,239 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
-using PharmacyWorkerAPI.Data;
-using PharmacyWorkerAPI.DTOs;
-using PharmacyWorkerAPI.DTOs.ItemPromotion;
-using PharmacyWorkerAPI.Hubs;
-using PharmacyWorkerAPI.Models;
-using PharmacyWorkerAPI.Services;
-using PharmacyWorkerAPI.Utility;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Storefront.Api.DTOs;
+using Storefront.Api.DTOs.ItemPromotion;
+using Storefront.Api.Models;
+using Storefront.Api.Services;
 
-namespace PharmacyWorkerAPI.Controllers
+namespace Storefront.Api.Controllers
 {
+    /// <summary>
+    /// Promotion endpoints. Reads are public — this is a storefront; writes require
+    /// an Admin token.
+    /// </summary>
     [ApiController]
-    [Route("api/item-promotions")]
+    [Route("api/v1/item-promotions")]
     public class ItemPromotionController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IWebHostEnvironment _environment;
-        private readonly RedisService _redis;
-        private readonly IHubContext<PromotionsHub> _hubContext;
-        private readonly IConfiguration _configuration;
+        private readonly IPromotionService _promotions;
+        private readonly IMediaAssetService _media;
 
-        public ItemPromotionController(
-            AppDbContext context,
-            IWebHostEnvironment environment,
-            RedisService redis,
-            IHubContext<PromotionsHub> hubContext,
-            IConfiguration configuration)
+        public ItemPromotionController(IPromotionService promotions, IMediaAssetService media)
         {
-            _context = context;
-            _environment = environment;
-            _redis = redis;
-            _hubContext = hubContext;
-
-            var webRoot = _environment.WebRootPath
-              ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-
-            var uploadsPath = Path.Combine(webRoot, "images", "promotions");
-            Directory.CreateDirectory(uploadsPath);
-            _configuration = configuration;
-
+            _promotions = promotions;
+            _media = media;
         }
 
         // ===============================
-        // CREATE PROMOTION
+        // CURRENT USER
+        // ===============================
+        private int CurrentUserId =>
+            int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+
+        private string CurrentUserName => User.Identity?.Name ?? "unknown";
+
+        // ===============================
+        // CREATE
         // ===============================
         [HttpPost]
+        [Authorize(Roles = Roles.Admin)]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> Create([FromForm] ItemPromotionCreateRequestDto dto)
+        public async Task<IActionResult> Create(
+            [FromForm] ItemPromotionCreateRequestDto dto, CancellationToken ct)
         {
-            // ---------- Basic validations ----------
-            if (dto.Image == null || dto.Image.Length == 0)
-                return BadRequest("Imagem é obrigatória.");
+            var result = await _promotions.CreateAsync(dto, CurrentUserId, CurrentUserName, ct);
 
-            if (dto.Price >= dto.PriceBefore)
-                return BadRequest("Preço promocional deve ser menor que o preço original.");
+            return result.Succeeded
+                ? CreatedAtAction(nameof(GetById), new { id = result.Promotion!.Id }, result.Promotion)
+                : Resolve(result);
+        }
 
-            if (dto.DateStart > dto.DateEnd)
-                return BadRequest("Data inicial deve ser menor ou igual à data final.");
+        // ===============================
+        // UPDATE
+        // ===============================
+        [HttpPut("{id:int}")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> Update(
+            int id, [FromBody] ItemPromotionUpdateRequestDto dto, CancellationToken ct)
+        {
+            var result = await _promotions.UpdateAsync(id, dto, CurrentUserId, ct);
 
-            // ---------- Image Upload  ----------
-            var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
-            if (!allowedTypes.Contains(dto.Image.ContentType))
-                return BadRequest("Formato de imagem inválido.");
+            return result.Succeeded ? Ok(result.Promotion) : Resolve(result);
+        }
 
-            var uploadsFolder = Path.Combine(
-                _environment.WebRootPath,
-                "images",
-                "promotions"
-            );
+        // ===============================
+        // ARCHIVE
+        // ===============================
 
-            Directory.CreateDirectory(uploadsFolder);
+        /// <summary>
+        /// Retires a promotion without destroying it. Replaces the old DELETE, which
+        /// removed the row and its image file, making every finished campaign
+        /// unrecoverable and unrepeatable.
+        /// </summary>
+        [HttpPatch("{id:int}/archive")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> Archive(int id, CancellationToken ct)
+        {
+            var result = await _promotions.ArchiveAsync(id, CurrentUserId, ct);
 
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.Image.FileName)}";
-            var filePath = Path.Combine(uploadsFolder, fileName);
+            return result.Succeeded ? Ok(result.Promotion) : Resolve(result);
+        }
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await dto.Image.CopyToAsync(stream);
-            }
+        // ===============================
+        // REACTIVATE
+        // ===============================
 
-            var imageUrl = $"/images/promotions/{fileName}";
+        /// <summary>
+        /// Runs an archived promotion again under a new window, reusing its image
+        /// and recording which promotion it came from.
+        /// </summary>
+        /// <remarks>
+        /// <c>duplicate</c> is the same operation under the name an operator reaches
+        /// for when copying a live promotion: both clone the row under a new window
+        /// and keep the lineage. One implementation, two routes, rather than two
+        /// implementations that drift.
+        /// </remarks>
+        [HttpPost("{id:int}/reactivate")]
+        [HttpPost("{id:int}/duplicate")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> Reactivate(
+            int id, [FromBody] ReactivatePromotionRequestDto dto, CancellationToken ct)
+        {
+            var result = await _promotions.ReactivateAsync(id, dto, CurrentUserId, CurrentUserName, ct);
 
-
-            // ---------- obj creation ----------
-            var promotion = new ItemPromotion
-            {
-                Name = dto.Name,
-                Price = dto.Price,
-                PriceBefore = dto.PriceBefore,
-                ImagePath = imageUrl,
-
-                DateStart = dto.DateStart,
-                DateEnd = dto.DateEnd,
-
-                IsActive = dto.IsActive,
-                CategoryId = dto.CategoryId,
-                ProductType = dto.ProductType,
-
-                CreatedByUserId = dto.CreatedByUserId,
-                CreatedByUserName = dto.CreatedByUserName,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.ItemPromotions.Add(promotion);
-            await _context.SaveChangesAsync();
-
-            // ---------- Response ----------
-            var response = new ItemPromotionResponseDto
-            {
-                Id = promotion.Id,
-                Name = promotion.Name,
-                Price = promotion.Price,
-                PriceBefore = promotion.PriceBefore,
-                ImageUrl = promotion.ImagePath,
-
-                DateStart = promotion.DateStart,
-                DateEnd = promotion.DateEnd,
-
-                IsActive = promotion.IsActive,
-                CategoryId = promotion.CategoryId,
-                ProductType = promotion.ProductType,
-                CreatedByUserId = promotion.CreatedByUserId,
-                CreatedByUserName = promotion.CreatedByUserName,
-            };
-            await _redis.InvalidateByPrefixAsync("item-promotions");
-            await _hubContext.Clients.All.SendAsync("PromotionsChanged");
-
-            return CreatedAtAction(nameof(GetById), new { id = promotion.Id }, response);
+            return result.Succeeded
+                ? CreatedAtAction(nameof(GetById), new { id = result.Promotion!.Id }, result.Promotion)
+                : Resolve(result);
         }
 
         // ===============================
         // GET BY ID
         // ===============================
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(int id, CancellationToken ct)
         {
-            var cacheKey = $"item-promotions:id:{id}";
+            var promotion = await _promotions.GetByIdAsync(id, ct);
 
-            var cached = await _redis.GetAsync<ItemPromotionResponseDto>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
-
-            var publicBaseUrl = _configuration["PublicBaseUrl"];
-            var promotion = await _context.ItemPromotions.FindAsync(id);
-
-            if (promotion == null)
-                return NotFound();
-
-            var response = new ItemPromotionResponseDto
-            {
-                Id = promotion.Id,
-                Name = promotion.Name,
-                Price = promotion.Price,
-                PriceBefore = promotion.PriceBefore,
-                ImageUrl = $"{publicBaseUrl}{promotion.ImagePath}",
-
-                DateStart = promotion.DateStart,
-                DateEnd = promotion.DateEnd,
-
-                IsActive = promotion.IsActive,
-                CategoryId = promotion.CategoryId,
-                ProductType = promotion.ProductType,
-                CreatedByUserId = promotion.CreatedByUserId,
-                CreatedByUserName = promotion.CreatedByUserName
-            };
-
-            await _redis.SetAsync(cacheKey, response, TimeSpan.FromMinutes(5));
-
-            return Ok(response);
+            return promotion == null ? NotFound() : Ok(promotion);
         }
 
         // ===============================
-        // DELETE PROMOTION
+        // HISTORY
         // ===============================
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> Delete(int id)
+        [HttpGet("{id:int}/history")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetHistory(int id, CancellationToken ct)
         {
-            var promotion = await _context.ItemPromotions.FindAsync(id);
+            var history = await _promotions.GetHistoryAsync(id, ct);
 
-            if (promotion == null)
-                return NotFound();
-
-            // Remover imagem física
-            if (!string.IsNullOrWhiteSpace(promotion.ImagePath))
-            {
-                var imagePath = Path.Combine(
-                    _environment.WebRootPath,
-                    promotion.ImagePath.TrimStart('/')
-                        .Replace("/", Path.DirectorySeparatorChar.ToString())
-                );
-
-                if (System.IO.File.Exists(imagePath))
-                    System.IO.File.Delete(imagePath);
-            }
-
-            _context.ItemPromotions.Remove(promotion);
-            await _context.SaveChangesAsync();
-
-            await _redis.InvalidateByPrefixAsync("item-promotions");
-            await _hubContext.Clients.All.SendAsync("PromotionsChanged");
-            return NoContent();
+            return history == null ? NotFound() : Ok(history);
         }
 
         // ===============================
-        // GET ALL PROMOTIONS ORDERED BY END DATE
+        // LIST BY STATUS
         // ===============================
-        [HttpGet("all")]
-        public async Task<IActionResult> GetAll()
-        {
-            var cacheKey = "item-promotions:all:by-end-date";
 
-            var cached = await _redis. GetAsync<List<ItemPromotionResponseDto>>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
-
-            var publicBaseUrl = _configuration["PublicBaseUrl"];
-            var promotions = await _context.ItemPromotions
-                .OrderBy(p => p.DateEnd)
-                .Select(p => new ItemPromotionResponseDto
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Price = p.Price,
-                    PriceBefore = p.PriceBefore,
-                    ImageUrl = $"{publicBaseUrl}{p.ImagePath}",
-
-                    DateStart = p.DateStart,
-                    DateEnd = p.DateEnd,
-
-                    IsActive = p.IsActive,
-                    CategoryId = p.CategoryId,
-                    ProductType = p.ProductType,
-                    CreatedByUserId = p.CreatedByUserId,
-                    CreatedByUserName = p.CreatedByUserName
-                })
-                .ToListAsync();
-
-            await _redis.SetAsync(cacheKey, promotions, TimeSpan.FromMinutes(5));
-
-            return Ok(promotions);
-        }
-
-        // ===============================
-        // GET ACTIVE PROMOTIONS
-        // ===============================
-        [HttpGet("active/all")]
-        public async Task<IActionResult> GetActive()
-        {
-            var cacheKey = "item-promotions:active";
-
-            var cached = await _redis.GetAsync<List<ItemPromotionResponseDto>>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
-
-            var now = DateTime.UtcNow;
-
-            var publicBaseUrl = _configuration["PublicBaseUrl"];
-            var promotions = await _context.ItemPromotions
-                .Where(p =>
-                    p.IsActive &&
-                    p.DateStart <= now &&
-                    p.DateEnd >= now
-                )
-                .OrderBy(p => p.DateEnd)
-                .Select(p => new ItemPromotionResponseDto
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Price = p.Price,
-                    PriceBefore = p.PriceBefore,
-                    ImageUrl = $"{publicBaseUrl}{p.ImagePath}",
-
-                    DateStart = p.DateStart,
-                    DateEnd = p.DateEnd,
-
-                    IsActive = p.IsActive,
-                    CategoryId = p.CategoryId,
-                    ProductType = p.ProductType,
-                    CreatedByUserId = p.CreatedByUserId,
-                    CreatedByUserName = p.CreatedByUserName
-                })
-                .ToListAsync();
-
-            await _redis.SetAsync(cacheKey, promotions, TimeSpan.FromMinutes(5));
-
-            return Ok(promotions);
-        }
-
-        // ===============================
-        // GET ALL PROMOTIONS
-        // Filter by minimum CreatedAt
-        // ===============================
-        [HttpGet("created-after")]
-        public async Task<IActionResult> GetAllCreatedAfter(
-            [FromQuery] DateTime? minCreatedAt)
-        {
-            var cacheKey = $"item-promotions:created-after:{minCreatedAt:yyyyMMddHHmm}";
-
-            var cached = await _redis.GetAsync<List<ItemPromotionResponseDto>>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
-
-            IQueryable<ItemPromotion> query = _context.ItemPromotions;
-
-            // ---------- filtera ----------
-            if (minCreatedAt.HasValue)
-            {
-                query = query.Where(p => p.CreatedAt >= minCreatedAt.Value);
-            }
-
-            // ---------- ordenation ----------
-            query = query.OrderByDescending(p => p.CreatedAt);
-
-            var publicBaseUrl = _configuration["PublicBaseUrl"];
-            var promotions = await query
-                .Select(p => new ItemPromotionResponseDto
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Price = p.Price,
-                    PriceBefore = p.PriceBefore,
-                    ImageUrl = $"{publicBaseUrl}{p.ImagePath}",
-
-                    DateStart = p.DateStart,
-                    DateEnd = p.DateEnd,
-
-                    IsActive = p.IsActive,
-                    CategoryId = p.CategoryId,
-                    ProductType = p.ProductType,
-                    CreatedByUserId = p.CreatedByUserId,
-                    CreatedByUserName = p.CreatedByUserName
-                })
-                .ToListAsync();
-
-            await _redis.SetAsync(cacheKey, promotions, TimeSpan.FromMinutes(5));
-
-            return Ok(promotions);
-        }
-
-        // ===============================
-        // GET ACTIVE PROMOTIONS (PAGED)
-        // ===============================
-        [HttpGet("active")]
-        public async Task<IActionResult> GetActivePaged(
+        /// <summary>
+        /// Admin listing. Pass <c>status=Archived</c> for the library of past
+        /// promotions available to reactivate.
+        /// </summary>
+        [HttpGet]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetByStatus(
+            CancellationToken ct,
+            [FromQuery] string? status = null,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 12,
-            string? timeZone = null)
+            [FromQuery] int pageSize = 12)
+        {
+            if (status != null && !PromotionStatus.IsValid(status))
+                return BadRequest("Status inválido.");
+
+            return Ok(await _promotions.GetByStatusAsync(status, page, pageSize, ct));
+        }
+
+        // ===============================
+        // ADMIN SUMMARY
+        // ===============================
+        [HttpGet("missing-images/count")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> CountMissingImages(CancellationToken ct) =>
+            Ok(new { count = await _promotions.CountMissingImagesAsync(ct) });
+
+        // ===============================
+        // MEDIA LIBRARY
+        // ===============================
+        [HttpGet("media-assets")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> GetMediaAssets(
+            CancellationToken ct,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 24)
         {
             if (page <= 0) page = 1;
-            if (pageSize <= 0 || pageSize > 50) pageSize = 12;
+            if (pageSize is <= 0 or > 100) pageSize = 24;
 
-            var userTimeZone = Utilities.GetTimeZone(timeZone);
-            var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTimeZone);
+            var assets = await _media.ListAsync(page, pageSize, ct);
+            var totalItems = await _media.CountAsync(ct);
 
-
-            var cacheKey = $"item-promotions:active:page:{page}:size:{pageSize}";
-
-            var cached = await _redis.GetAsync<PagedResultDto<ItemPromotionResponseDto>>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
-
-            var query = _context.ItemPromotions
-                .AsNoTracking()
-                .Where(p =>
-                    p.IsActive &&
-                    p.DateStart <= nowLocal &&
-                    p.DateEnd >= nowLocal
-                );
-
-            var totalItems = await query.CountAsync();
-
-            var publicBaseUrl = _configuration["PublicBaseUrl"];
-            var promotions = await query
-                .OrderBy(p => p.DateEnd)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new ItemPromotionResponseDto
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Price = p.Price,
-                    PriceBefore = p.PriceBefore,
-                    ImageUrl = $"{publicBaseUrl}{p.ImagePath}",
-                    DateStart = p.DateStart,
-                    DateEnd = p.DateEnd,
-                    IsActive = p.IsActive,
-                    CategoryId = p.CategoryId,
-                    ProductType = p.ProductType,
-                    CreatedByUserId = p.CreatedByUserId,
-                    CreatedByUserName = p.CreatedByUserName,
-                })
-                .ToListAsync();
-
-            var result = new PagedResultDto<ItemPromotionResponseDto>
+            return Ok(new PagedResultDto<MediaAssetDto>
             {
-                Items = promotions,
+                Items = assets.ConvertAll(a => new MediaAssetDto
+                {
+                    Id = a.Id,
+                    Url = a.FilePath,
+                    MimeType = a.MimeType,
+                    ByteSize = a.ByteSize,
+                    IsMissing = a.IsMissing,
+                    CreatedAt = a.CreatedAt,
+                }),
                 Page = page,
                 PageSize = pageSize,
                 TotalItems = totalItems,
-                HasMore = (page * pageSize) < totalItems
-            };
-
-            await _redis.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
-
-            return Ok(result);
+                HasMore = page * pageSize < totalItems,
+            });
         }
 
+        // ===============================
+        // STOREFRONT READS
+        // ===============================
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll(CancellationToken ct) =>
+            Ok(await _promotions.GetAllAsync(ct));
 
-        // ===============================
-        // GET CATEGORIES
-        // ===============================
+        [HttpGet("active/all")]
+        public async Task<IActionResult> GetActive(CancellationToken ct) =>
+            Ok(await _promotions.GetActiveAsync(ct));
+
+        [HttpGet("created-after")]
+        public async Task<IActionResult> GetAllCreatedAfter(
+            [FromQuery] DateTime? minCreatedAt, CancellationToken ct) =>
+            Ok(await _promotions.GetCreatedAfterAsync(minCreatedAt, ct));
+
+        /// <summary>
+        /// The storefront grid: publishable promotions inside their date window.
+        /// </summary>
+        /// <remarks>
+        /// Search, category and price filters are bound from the query string, so an
+        /// unfiltered request behaves exactly as before.
+        /// </remarks>
+        [HttpGet("active")]
+        public async Task<IActionResult> GetActivePaged(
+            CancellationToken ct,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 12,
+            [FromQuery] string? timeZone = null,
+            [FromQuery] PromotionFilterDto? filter = null) =>
+            Ok(await _promotions.GetActivePagedAsync(page, pageSize, timeZone, filter, ct));
+
         [HttpGet("categories/all")]
-        public async Task<IActionResult> GetAllCategories()
-        {
-            var cacheKey = "categories:all";
+        public async Task<IActionResult> GetAllCategories(CancellationToken ct) =>
+            Ok(await _promotions.GetCategoriesAsync(ct));
 
-            var cached = await _redis.GetAsync<List<CategoryDto>>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
-
-            var now = DateTime.UtcNow;
-
-            var categories = await _context.Categories
-                .Select(p => new CategoryDto
-                {
-                    Name = p.Name
-                })
-                .Distinct()
-                .ToListAsync();          
-
-            await _redis.SetAsync(cacheKey, categories, TimeSpan.FromMinutes(5));
-
-            return Ok(categories);
-        }
+        // ===============================
+        // RESULT MAPPING
+        // ===============================
+        private IActionResult Resolve(PromotionResult result) =>
+            result.NotFound ? NotFound() : BadRequest(result.Error);
     }
 }

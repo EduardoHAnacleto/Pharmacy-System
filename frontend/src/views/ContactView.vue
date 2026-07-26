@@ -1,9 +1,9 @@
 <template>
-  <ContactPage />
-  <WhatsappFloating />
+  <ContactInfo />
 </template>
 
 <script setup lang="ts">
-import ContactPage from '@/components/Contact.vue'
-import WhatsappFloating from '@/components/WhatsappFloating.vue'
+// WhatsappFloating is rendered once by MainLayout; having it here as well put two
+// floating buttons on top of each other on this page.
+import ContactInfo from '@/components/ContactInfo.vue'
 </script>

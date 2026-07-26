@@ -1,0 +1,241 @@
+@host = http://localhost:5000
+@api = {{host}}/api/v1
+
+### Health — sem dependências
+GET {{host}}/health
+
+### Health — com banco e Redis
+GET {{host}}/health/ready
+
+###############################################
+# STOREFRONT (público)
+###############################################
+
+### Configuração da loja — o que o frontend pede antes do primeiro render
+GET {{api}}/store-settings
+
+### Grade da vitrine
+GET {{api}}/item-promotions/active?page=1&pageSize=12&timeZone=America/Sao_Paulo
+
+### Busca, filtro e ordenação
+GET {{api}}/item-promotions/active?filter.search=dipirona&filter.categoryId=1&filter.minPrice=5&filter.maxPrice=50&filter.sort=priceAsc
+
+### Categorias
+GET {{api}}/item-promotions/categories/all
+
+### Uma promoção
+GET {{api}}/item-promotions/1
+
+### Eventos de uso — anônimos, sessionKey aleatória do navegador
+POST {{api}}/analytics/events
+Content-Type: application/json
+
+{
+  "events": [
+    { "eventType": "promotion_view", "promotionId": 1, "sessionKey": "0123456789abcdef0123456789abcdef" },
+    { "eventType": "add_to_cart",    "promotionId": 1, "sessionKey": "0123456789abcdef0123456789abcdef" }
+  ]
+}
+
+### Pedido — sem nome, telefone, CPF, CEP ou endereço: não há campo para eles
+POST {{api}}/orders
+Content-Type: application/json
+
+{
+  "fulfillmentType": "delivery",
+  "paymentMethod": "pix",
+  "deliveryCity": "Santa Terezinha de Itaipu",
+  "deliveryFee": 8.00,
+  "items": [
+    { "promotionId": 1, "name": "Dipirona 500mg", "unitPrice": 9.90, "quantity": 2 }
+  ]
+}
+
+###############################################
+# AUTENTICAÇÃO
+###############################################
+
+### Login — devolve o access token e põe o refresh num cookie HttpOnly
+# @name login
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "troque-isto"
+}
+
+@token = {{login.response.body.accessToken}}
+
+### Quem sou eu
+GET {{api}}/auth/me
+Authorization: Bearer {{token}}
+
+### Renova o par de tokens (usa o cookie, não o corpo)
+POST {{api}}/auth/refresh
+
+### Logout — revoga o refresh no servidor
+POST {{api}}/auth/logout
+Authorization: Bearer {{token}}
+
+###############################################
+# ADMINISTRAÇÃO (Admin)
+###############################################
+
+### Configuração da loja — substituição completa
+PUT {{api}}/store-settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "storeName": "Minha Loja",
+  "tagline": "Sempre perto de você",
+  "logoUrl": "/logoFarma.png",
+  "primaryColor": "#0d6efd",
+  "secondaryColor": "#198754",
+  "address": "Rua Exemplo, 100",
+  "city": "Santa Terezinha de Itaipu",
+  "countryCode": "BR",
+  "timeZone": "America/Sao_Paulo",
+  "mapQuery": null,
+  "phone": "(45) 3541-0000",
+  "whatsAppNumber": "5545999975299",
+  "email": "contato@exemplo.com",
+  "instagramUrl": null,
+  "facebookUrl": null,
+  "currency": "BRL",
+  "locale": "pt-BR",
+  "deliveryEnabled": true,
+  "pickupEnabled": true,
+  "deliveryFee": 8.00,
+  "minDeliveryTotal": 30.00,
+  "deliveryCities": ["Santa Terezinha de Itaipu"],
+  "collectTaxId": true,
+  "collectPostalCode": true,
+  "openingHours": {
+    "1": [{ "open": "08:00", "close": "12:00" }, { "open": "13:30", "close": "18:00" }],
+    "6": [{ "open": "08:00", "close": "12:00" }]
+  },
+  "footerText": null
+}
+
+### Promoções cadastradas
+GET {{api}}/item-promotions/all
+Authorization: Bearer {{token}}
+
+### Arquivadas — a biblioteca de reativação
+GET {{api}}/item-promotions?status=Archived&page=1&pageSize=24
+Authorization: Bearer {{token}}
+
+### Quantas promoções perderam a imagem do disco
+GET {{api}}/item-promotions/missing-images/count
+Authorization: Bearer {{token}}
+
+### Histórico de status de uma promoção
+GET {{api}}/item-promotions/1/history
+Authorization: Bearer {{token}}
+
+### Editar promoção — a imagem não é tocada
+PUT {{api}}/item-promotions/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Dipirona 500mg",
+  "price": 8.90,
+  "priceBefore": 14.90,
+  "dateStart": "2026-08-01T00:00:00Z",
+  "dateEnd": "2026-08-31T23:59:59Z",
+  "publish": true,
+  "categoryId": 1,
+  "productType": "default"
+}
+
+### Arquivar — mantém a linha e a imagem. Não existe delete.
+PATCH {{api}}/item-promotions/1/archive
+Authorization: Bearer {{token}}
+
+### Reativar — nova promoção com a mesma arte e nova vigência
+POST {{api}}/item-promotions/1/reactivate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "dateStart": "2026-09-01T00:00:00Z",
+  "dateEnd": "2026-09-30T23:59:59Z",
+  "publish": true
+}
+
+### Duplicar — mesma operação, para copiar algo que ainda está no ar
+POST {{api}}/item-promotions/1/duplicate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "dateStart": "2026-10-01T00:00:00Z",
+  "dateEnd": "2026-10-31T23:59:59Z",
+  "publish": true
+}
+
+### Categorias — criar
+POST {{api}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Bebidas" }
+
+### Categorias — renomear
+PUT {{api}}/categories/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Genéricos" }
+
+### Categorias — excluir (recusado enquanto houver promoção usando)
+DELETE {{api}}/categories/1
+Authorization: Bearer {{token}}
+
+###############################################
+# INSIGHTS E EXPORTAÇÃO (Admin)
+###############################################
+
+### Funil de conversão
+GET {{api}}/analytics/funnel?from=2026-07-01&to=2026-07-31
+Authorization: Bearer {{token}}
+
+### Desempenho por promoção
+GET {{api}}/analytics/promotions?from=2026-07-01&to=2026-07-31&limit=20
+Authorization: Bearer {{token}}
+
+### Resumo de vendas
+GET {{api}}/analytics/sales?from=2026-07-01&to=2026-07-31
+Authorization: Bearer {{token}}
+
+### Série temporal
+GET {{api}}/analytics/timeseries?eventType=promotion_view&from=2026-07-01&to=2026-07-31
+Authorization: Bearer {{token}}
+
+### Alertas operacionais
+GET {{api}}/analytics/alerts
+Authorization: Bearer {{token}}
+
+### Conjuntos exportáveis
+GET {{api}}/exports
+Authorization: Bearer {{token}}
+
+### Exportar CSV
+GET {{api}}/exports/orders?from=2026-07-01&to=2026-07-31
+Authorization: Bearer {{token}}
+
+###############################################
+# AUTORIZAÇÃO — deve responder 401
+###############################################
+
+### Escrita sem token
+PATCH {{api}}/item-promotions/1/archive
+
+### Configuração sem token
+PUT {{api}}/store-settings
+Content-Type: application/json
+
+{ "storeName": "Invasor" }

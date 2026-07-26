@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useSettingsStore } from '@/stores/settings'
 
 export interface CartItem {
   id: number
@@ -13,12 +14,28 @@ type DeliveryType = 'pickup' | 'delivery'
 const STORAGE_KEY = 'cart-storage'
 const EXPIRATION_MS = 24 * 60 * 60 * 1000
 
+interface StoredCart {
+  items: CartItem[]
+  deliveryType: DeliveryType
+  expiresAt: number
+}
+
+function isStoredCart(value: unknown): value is StoredCart {
+  if (typeof value !== 'object' || value === null) return false
+
+  const candidate = value as Partial<StoredCart>
+
+  return (
+    Array.isArray(candidate.items) &&
+    typeof candidate.expiresAt === 'number' &&
+    (candidate.deliveryType === 'pickup' || candidate.deliveryType === 'delivery')
+  )
+}
+
 export const useCartStore = defineStore('cart', {
   state: () => ({
     items: [] as CartItem[],
     deliveryType: 'pickup' as DeliveryType,
-    deliveryFee: 8,
-    minDeliveryTotal: 30,
     expiresAt: 0,
   }),
 
@@ -28,8 +45,32 @@ export const useCartStore = defineStore('cart', {
     productsTotal: (state) =>
       state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
 
+    /**
+     * The shop's delivery fee.
+     *
+     * Read from settings rather than the literal 8 that used to sit in this
+     * state: a fee written into the frontend cannot be changed by the shop that
+     * charges it, and is meaningless for any other shop.
+     */
+    deliveryFee(): number {
+      return useSettingsStore().settings.deliveryFee
+    },
+
+    minDeliveryTotal(): number {
+      return useSettingsStore().settings.minDeliveryTotal
+    },
+
+    /** Fulfilment options the shop actually offers. */
+    deliveryEnabled(): boolean {
+      return useSettingsStore().settings.deliveryEnabled
+    },
+
+    pickupEnabled(): boolean {
+      return useSettingsStore().settings.pickupEnabled
+    },
+
     canDeliver(): boolean {
-      return this.productsTotal >= this.minDeliveryTotal
+      return this.deliveryEnabled && this.productsTotal >= this.minDeliveryTotal
     },
 
     finalTotal(): number {
@@ -45,8 +86,18 @@ export const useCartStore = defineStore('cart', {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) return
 
-      const data = JSON.parse(raw)
-      if (Date.now() > data.expiresAt) {
+      // Anything can be in localStorage — a truncated write, a stale shape from
+      // an older release, or something a user pasted in. A corrupt cart must not
+      // throw on mount and take the whole app down with it.
+      let data: unknown
+      try {
+        data = JSON.parse(raw)
+      } catch {
+        localStorage.removeItem(STORAGE_KEY)
+        return
+      }
+
+      if (!isStoredCart(data) || Date.now() > data.expiresAt) {
         localStorage.removeItem(STORAGE_KEY)
         return
       }

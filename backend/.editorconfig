@@ -1,0 +1,117 @@
+# Code style for the .NET project. `dotnet format --verify-no-changes` in CI
+# enforces the formatting rules; the analyzer severities below surface real
+# defects rather than taste.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.{csproj,json,yml,yaml}]
+indent_size = 2
+
+[*.cs]
+indent_size = 4
+max_line_length = 100
+
+# ---------------------------------------------------------------------------
+# Language conventions
+# ---------------------------------------------------------------------------
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_prefer_braces = when_multiline:suggestion
+
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+
+dotnet_style_readonly_field = true:warning
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+
+# Field naming, matching what the code already does. Rule order is significant:
+# the first rule whose symbol group matches wins, so the const and
+# static-readonly groups have to precede the catch-all for instance fields —
+# otherwise PascalCase constants get flagged for a missing underscore.
+
+# const fields -> PascalCase
+dotnet_naming_rule.private_const_pascal.symbols = private_const_fields
+dotnet_naming_rule.private_const_pascal.style = pascal_case
+dotnet_naming_rule.private_const_pascal.severity = warning
+
+dotnet_naming_symbols.private_const_fields.applicable_kinds = field
+dotnet_naming_symbols.private_const_fields.applicable_accessibilities = private, internal
+dotnet_naming_symbols.private_const_fields.required_modifiers = const
+
+# static readonly fields -> PascalCase
+dotnet_naming_rule.private_static_readonly_pascal.symbols = private_static_readonly_fields
+dotnet_naming_rule.private_static_readonly_pascal.style = pascal_case
+dotnet_naming_rule.private_static_readonly_pascal.severity = warning
+
+dotnet_naming_symbols.private_static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_readonly_fields.applicable_accessibilities = private, internal
+dotnet_naming_symbols.private_static_readonly_fields.required_modifiers = static, readonly
+
+# everything else private -> _camelCase
+dotnet_naming_rule.private_fields_underscore.symbols = private_instance_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel_case
+dotnet_naming_rule.private_fields_underscore.severity = warning
+
+dotnet_naming_symbols.private_instance_fields.applicable_kinds = field
+dotnet_naming_symbols.private_instance_fields.applicable_accessibilities = private
+
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+
+# ---------------------------------------------------------------------------
+# Analyzer severities that catch bugs, not preferences
+# ---------------------------------------------------------------------------
+
+# Unused private member / unused parameter.
+dotnet_diagnostic.IDE0051.severity = warning
+dotnet_diagnostic.IDE0052.severity = warning
+
+# Result of an expression is never used.
+dotnet_diagnostic.CA1806.severity = warning
+
+# Do not ignore method results / dispose objects before losing scope.
+dotnet_diagnostic.CA2000.severity = suggestion
+
+# Use ConfigureAwait only where it matters; not in ASP.NET Core.
+dotnet_diagnostic.CA2007.severity = none
+
+# Prefer string comparison with explicit StringComparison.
+dotnet_diagnostic.CA1310.severity = warning
+
+# Culture-dependent formatting and parsing. These are correctness bugs, not
+# style: a locale with non-ASCII digits breaks values meant to round-trip.
+dotnet_diagnostic.CA1305.severity = warning
+
+# Logging performance rules, deliberately off. Both exist to avoid allocating in
+# hot paths; every call site here is a startup seeder or a warning-level event.
+# Rewriting them as LoggerMessage delegates would add indirection for no gain.
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
+
+# ---------------------------------------------------------------------------
+# Generated code
+# ---------------------------------------------------------------------------
+# EF Core writes these; they are not ours to restyle or lint.
+[Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none

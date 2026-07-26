@@ -15,18 +15,17 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/"
+    "format": "prettier --write --experimental-cli src/",
+    "prepare": "cd .. && husky frontend/.husky"
   },
   "dependencies": {
     "@microsoft/signalr": "^10.0.0",
     "axios": "^1.13.2",
-    "boostrap": "^2.0.0",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
-    "cors": "^2.8.6",
-    "multer": "^2.0.2",
     "pinia": "^3.0.4",
     "vue": "^3.5.26",
+    "vue-i18n": "^11.4.7",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
@@ -44,8 +43,10 @@
     "eslint": "^9.39.2",
     "eslint-plugin-playwright": "^2.4.0",
     "eslint-plugin-vue": "~10.6.2",
+    "husky": "^9.1.7",
     "jiti": "^2.6.1",
     "jsdom": "^27.3.0",
+    "lint-staged": "^17.2.0",
     "npm-run-all2": "^8.0.4",
     "prettier": "3.7.4",
     "typescript": "~5.9.3",
@@ -53,5 +54,14 @@
     "vite-plugin-vue-devtools": "^8.0.5",
     "vitest": "^4.0.16",
     "vue-tsc": "^3.2.1"
+  },
+  "lint-staged": {
+    "*.{ts,vue}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,html,md}": [
+      "prettier --write"
+    ]
   }
 }

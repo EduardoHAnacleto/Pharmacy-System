@@ -1,0 +1,8 @@
+# The storefront is meant to be indexed; the admin area is not.
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /login
+Disallow: /checkout
+
+Sitemap: /sitemap.xml

@@ -1,0 +1,5 @@
+# Husky runs hooks from the repository root; the frontend toolchain and its
+# lint-staged config live one level down.
+cd frontend || exit 0
+
+npx lint-staged

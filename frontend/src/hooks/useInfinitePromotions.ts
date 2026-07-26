@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import type { ItemPromotion } from '@/types/itemPromotion'
-import { getActivePromotionsPaged } from '@/services/itemPromotionService'
+import { getActivePromotionsPaged, type PromotionFilter } from '@/services/itemPromotionService'
 
 const DEFAULT_PAGE_SIZE = 12
 
@@ -13,6 +13,9 @@ export function useInfinitePromotions() {
   const hasMore = ref(true)
   const error = ref<string | null>(null)
 
+  /** Applied to every page request, so scrolling keeps the active filter. */
+  const filter = ref<PromotionFilter>({})
+
   async function loadMore() {
     if (loading.value || !hasMore.value) return
 
@@ -20,9 +23,7 @@ export function useInfinitePromotions() {
     error.value = null
 
     try {
-      const result = await getActivePromotionsPaged(page.value, pageSize.value)
-      //
-      console.log(result.items)
+      const result = await getActivePromotionsPaged(page.value, pageSize.value, filter.value)
       promotions.value.push(...result.items)
 
       hasMore.value = result.hasMore
@@ -45,12 +46,26 @@ export function useInfinitePromotions() {
     error.value = null
   }
 
+  /**
+   * Replaces the filter and reloads from the first page.
+   *
+   * Resetting is not optional: keeping the accumulated items while changing the
+   * filter would leave the grid showing rows that no longer match it.
+   */
+  async function applyFilter(next: PromotionFilter) {
+    filter.value = { ...next }
+    reset()
+    await loadMore()
+  }
+
   return {
     promotions,
     loading,
     hasMore,
     error,
+    filter,
     loadMore,
     reset,
+    applyFilter,
   }
 }
