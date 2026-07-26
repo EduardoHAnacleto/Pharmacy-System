@@ -45,8 +45,15 @@
         <div class="card-body">
           <h5 class="mb-1">Funil</h5>
           <p class="text-muted small">
-            Visitas distintas em cada etapa. Antes disso não havia visibilidade alguma: o pedido
-            existia só como mensagem no celular.
+            Visitas em cada etapa — não ações, então quem adiciona o mesmo item três vezes conta
+            uma. Antes disso não havia visibilidade alguma: o pedido existia só como mensagem no
+            celular.
+          </p>
+          <!-- Dito, e não escondido: são limites superiores, nunca subcontagem. -->
+          <p class="text-muted small fst-italic">
+            Uma visita que vê duas promoções conta duas vezes em "viram promoção", e quem volta em
+            outro dia conta nos dois — a chave de sessão morre com a aba, o que é justamente o que
+            permite medir sem identificar ninguém.
           </p>
 
           <div class="row text-center g-3">
@@ -107,8 +114,9 @@
         <div class="card-body">
           <h5 class="mb-1">Desempenho por promoção</h5>
           <p class="text-muted small">
-            Muita visualização com conversão baixa é o sinal que vale agir: o item é procurado, mas
-            algo — preço ou foto — está impedindo.
+            Muita visita com conversão baixa é o sinal que vale agir: o item é procurado, mas algo —
+            preço ou foto — está impedindo. "Visitas" e "puseram no carrinho" contam visitas
+            distintas, então a conversão compara coisas equivalentes; "qtd. vendida" conta unidades.
           </p>
 
           <div class="table-responsive">
@@ -116,8 +124,8 @@
               <thead>
                 <tr>
                   <th>Promoção</th>
-                  <th class="text-end">Views</th>
-                  <th class="text-end">No carrinho</th>
+                  <th class="text-end">Visitas</th>
+                  <th class="text-end">Puseram no carrinho</th>
                   <th class="text-end">Conversão</th>
                   <th class="text-end">Qtd. vendida</th>
                   <th class="text-end">Receita</th>

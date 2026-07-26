@@ -93,6 +93,29 @@ namespace Storefront.Api.DTOs.Analytics
     // REPORTING
     // ===============================
 
+    /// <summary>
+    /// The conversion funnel, counted in visits rather than in actions.
+    /// </summary>
+    /// <remarks>
+    /// Every step counts distinct sessions, so a visitor who adds the same item to a
+    /// cart three times is one visit at the cart step. Counting actions instead let
+    /// the ratio between two steps exceed 100%, which is not a conversion rate.
+    /// <para>
+    /// Two known over-counts, both inherent to a daily rollup rather than bugs, and
+    /// both upper bounds — never under-reporting:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>
+    /// A visit that viewed two promotions counts twice at the view step, because the
+    /// rollup aggregates per promotion and cannot be un-grouped after the fact.
+    /// </item>
+    /// <item>
+    /// A visitor returning on two days counts on each, because session keys are
+    /// deliberately not durable — they die with the browser tab, which is what keeps
+    /// this measurable without identifying anyone.
+    /// </item>
+    /// </list>
+    /// </remarks>
     public class FunnelDto
     {
         public int PromotionViews { get; set; }
@@ -116,16 +139,34 @@ namespace Storefront.Api.DTOs.Analytics
         public string Status { get; set; } = string.Empty;
         public int? SourcePromotionId { get; set; }
 
+        /// <summary>Distinct visits that saw this promotion.</summary>
         public int Views { get; set; }
+
+        /// <summary>Distinct visits that put it in a cart.</summary>
         public int AddToCart { get; set; }
+
+        /// <summary>Units sold — a count of items, not of visits.</summary>
         public int OrderedQuantity { get; set; }
+
         public decimal Revenue { get; set; }
 
         /// <summary>
-        /// Views converted to cart additions. A high view count with a low rate is
-        /// the signal worth acting on: the item is wanted but something — price or
-        /// photo — is stopping people.
+        /// Share of the visits that saw this promotion which put it in a cart. A high
+        /// view count with a low rate is the signal worth acting on: the item is
+        /// wanted but something — price or photo — is stopping people.
         /// </summary>
+        /// <remarks>
+        /// Both sides count visits. They used to count actions, and a visitor adding
+        /// twice off one view produced a "conversion rate" of 200% — two numbers that
+        /// were not comparable divided by each other.
+        /// <para>
+        /// It can still pass 100% in one case: a visit that adds to a cart without the
+        /// card ever entering the viewport, so no view was recorded. Left unclamped,
+        /// because a rate above 100% is then a true statement about the data and
+        /// hiding it would only make the number look right while being less
+        /// informative.
+        /// </para>
+        /// </remarks>
         public double ConversionRate { get; set; }
     }
 

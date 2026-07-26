@@ -133,6 +133,90 @@ public class AnalyticsEndpointsTests
     }
 
     [SkippableFact]
+    public async Task PromotionPerformance_CountsVisitsSoConversionCannotExceedOneHundredPercent()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var promotionId = await CreatePromotionAsync(client, "Conversão em visitas");
+
+        // One visit: sees it once, then adds it to the cart three times. Counting
+        // actions gave 3 adds over 1 view — a "conversion rate" of 300%, which is not
+        // a rate at all, because the numerator and denominator had different units.
+        var visitor = NewSession();
+
+        await TrackAsync(
+            (AnalyticsEventType.PromotionView, promotionId, visitor),
+            (AnalyticsEventType.AddToCart, promotionId, visitor),
+            (AnalyticsEventType.AddToCart, promotionId, visitor),
+            (AnalyticsEventType.AddToCart, promotionId, visitor));
+
+        var rows = await client.GetFromJsonAsync<List<PromotionPerformanceDto>>(
+            $"/api/v1/analytics/promotions?{TodayRange}&limit=200");
+
+        var row = Assert.Single(rows!, r => r.PromotionId == promotionId);
+
+        Assert.Equal(1, row.Views);
+        Assert.Equal(1, row.AddToCart);
+        Assert.Equal(1.0, row.ConversionRate);
+    }
+
+    [SkippableFact]
+    public async Task PromotionPerformance_SeparatesVisitsFromUnitsSold()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var promotionId = await CreatePromotionAsync(client, "Visitas vs unidades");
+
+        await TrackAsync((AnalyticsEventType.PromotionView, promotionId, NewSession()));
+
+        var ordered = await client.PostAsJsonAsync("/api/v1/orders", new
+        {
+            fulfillmentType = "pickup",
+            paymentMethod = "pix",
+            deliveryFee = 0,
+            items = new[]
+            {
+                new { promotionId, name = "Visitas vs unidades", unitPrice = 9.90m, quantity = 5 },
+            },
+        });
+
+        ordered.EnsureSuccessStatusCode();
+
+        var rows = await client.GetFromJsonAsync<List<PromotionPerformanceDto>>(
+            $"/api/v1/analytics/promotions?{TodayRange}&limit=200");
+
+        var row = Assert.Single(rows!, r => r.PromotionId == promotionId);
+
+        // Deliberately different units, and the column headings say so: one visit,
+        // five units. Conflating them is what the conversion rate got wrong.
+        Assert.Equal(1, row.Views);
+        Assert.Equal(5, row.OrderedQuantity);
+    }
+
+    [SkippableFact]
+    public async Task Funnel_CountsAVisitOncePerStepHoweverManyActionsItTook()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var before = await FunnelAsync(client);
+
+        var visitor = NewSession();
+
+        await TrackAsync(
+            (AnalyticsEventType.AddToCart, null, visitor),
+            (AnalyticsEventType.AddToCart, null, visitor),
+            (AnalyticsEventType.AddToCart, null, visitor));
+
+        var after = await FunnelAsync(client);
+
+        // One visit reached the cart step, not three.
+        Assert.Equal(before.AddToCart + 1, after.AddToCart);
+    }
+
+    [SkippableFact]
     public async Task TimeSeries_HasAPointForToday()
     {
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");

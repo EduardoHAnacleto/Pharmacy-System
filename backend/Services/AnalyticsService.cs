@@ -199,6 +199,9 @@ namespace Storefront.Api.Services
         public async Task<List<PromotionPerformanceDto>> GetPromotionPerformanceAsync(
             DateOnly from, DateOnly to, int limit, CancellationToken ct = default)
         {
+            // Visits, not actions. Summing EventCount here divided a count of adds by a
+            // count of views — two different units — and produced conversion rates
+            // above 100% for anyone who added the same item twice off one view.
             var counts = (await ReadAggregatesAsync(from, to, ct))
                 .Where(a => a.PromotionId != null)
                 .GroupBy(a => new { PromotionId = a.PromotionId!.Value, a.EventType })
@@ -206,7 +209,7 @@ namespace Storefront.Api.Services
                 {
                     g.Key.PromotionId,
                     g.Key.EventType,
-                    Total = g.Sum(a => a.EventCount),
+                    Total = g.Sum(a => a.UniqueSessions),
                 })
                 .ToList();
 
