@@ -77,8 +77,12 @@ jobs:
       # Reports only. Failing the publish on a base-image CVE would block
       # deploys on something this repository cannot fix; the findings land in
       # the Security tab instead.
+      # The tag is v-prefixed. Written as `0.28.0` it does not resolve, and the
+      # job dies in "Prepare all required actions" — before any step runs, so the
+      # continue-on-error below cannot save it. Nothing caught this earlier
+      # because this workflow only runs on main.
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         continue-on-error: true
         with:
           image-ref: ${{ steps.image.outputs.ref }}:sha-${{ github.sha }}
