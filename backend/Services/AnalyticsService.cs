@@ -29,6 +29,102 @@ namespace Storefront.Api.Services
 
         public AnalyticsService(AppDbContext context) => _context = context;
 
+        /// <summary>
+        /// One day's counts for an event type and promotion — the shape of an
+        /// <c>analytics_daily</c> row, whether it came from the rollup or from raw
+        /// events.
+        /// </summary>
+        private sealed record EventAggregate(
+            DateOnly Date, string EventType, int? PromotionId, int EventCount, int UniqueSessions);
+
+        /// <summary>
+        /// Reads event counts for a date range, from the rollup and from raw events.
+        /// </summary>
+        /// <remarks>
+        /// The rollup only covers <em>completed</em> days — <c>RollUpAnalyticsAsync</c>
+        /// skips today, which is still accumulating. Reading reports from the rollup
+        /// alone therefore reported nothing at all for today, while sales and order
+        /// counts came straight from <c>orders</c> and were live. The dashboard mixed
+        /// the two and showed an internally inconsistent picture: a funnel of zeros
+        /// beside "1 order recorded", and promotions with 2 units sold and 0 views.
+        /// On a fresh deployment that is what a shop owner sees on day one, and it
+        /// reads as broken software rather than as a rollup boundary.
+        /// <para>
+        /// The two sources are split at exactly that boundary, so nothing is counted
+        /// twice: days before today come from <c>analytics_daily</c>, today and
+        /// anything after it from <c>analytics_events</c>. Raw rows survive for the
+        /// retention window, so the ranges could otherwise overlap.
+        /// </para>
+        /// <para>
+        /// Today's raw rows are aggregated into the same shape the rollup stores,
+        /// rather than counted a different way, so a number does not change meaning
+        /// at midnight when the sweep runs.
+        /// </para>
+        /// </remarks>
+        private async Task<List<EventAggregate>> ReadAggregatesAsync(
+            DateOnly from, DateOnly to, CancellationToken ct)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var aggregates = new List<EventAggregate>();
+
+            // Completed days: the rollup owns them, and the raw rows behind them may
+            // already have been purged.
+            var rollupTo = to < today ? to : today.AddDays(-1);
+
+            if (from <= rollupTo)
+            {
+                var rolled = await _context.AnalyticsDaily
+                    .AsNoTracking()
+                    .Where(d => d.StatDate >= from && d.StatDate <= rollupTo)
+                    .Select(d => new
+                    {
+                        d.StatDate,
+                        d.EventType,
+                        d.PromotionId,
+                        d.EventCount,
+                        d.UniqueSessions,
+                    })
+                    .ToListAsync(ct);
+
+                aggregates.AddRange(rolled.Select(d => new EventAggregate(
+                    d.StatDate, d.EventType, d.PromotionId, d.EventCount, d.UniqueSessions)));
+            }
+
+            // Today onwards: not rolled up yet, so read the raw table.
+            var liveFrom = from > today ? from : today;
+
+            if (liveFrom <= to)
+            {
+                var liveStart = liveFrom.ToDateTime(TimeOnly.MinValue);
+                var liveEnd = to.ToDateTime(TimeOnly.MaxValue);
+
+                var live = await _context.AnalyticsEvents
+                    .AsNoTracking()
+                    .Where(e => e.OccurredAt >= liveStart && e.OccurredAt <= liveEnd)
+                    // Grouped by the date as well, so a range spanning midnight does
+                    // not collapse two days into one point on the time series.
+                    .GroupBy(e => new { e.OccurredAt.Date, e.EventType, e.PromotionId })
+                    .Select(g => new
+                    {
+                        g.Key.Date,
+                        g.Key.EventType,
+                        g.Key.PromotionId,
+                        EventCount = g.Count(),
+                        UniqueSessions = g.Select(e => e.SessionKey).Distinct().Count(),
+                    })
+                    .ToListAsync(ct);
+
+                aggregates.AddRange(live.Select(e => new EventAggregate(
+                    DateOnly.FromDateTime(e.Date),
+                    e.EventType,
+                    e.PromotionId,
+                    e.EventCount,
+                    e.UniqueSessions)));
+            }
+
+            return aggregates;
+        }
+
         // ===============================
         // INGESTION
         // ===============================
@@ -64,21 +160,13 @@ namespace Storefront.Api.Services
         public async Task<FunnelDto> GetFunnelAsync(
             DateOnly from, DateOnly to, CancellationToken ct = default)
         {
-            // Reads the rollup, so the answer survives the purge of raw rows and
-            // stays cheap over long ranges.
-            var totals = await _context.AnalyticsDaily
-                .AsNoTracking()
-                .Where(d => d.StatDate >= from && d.StatDate <= to)
-                .GroupBy(d => d.EventType)
-                .Select(g => new
-                {
-                    EventType = g.Key,
-                    Sessions = g.Sum(d => d.UniqueSessions),
-                })
-                .ToListAsync(ct);
+            // Rollup for completed days, raw for today. Reading only the rollup here
+            // is what made the funnel report zeros beside a live order count.
+            var aggregates = await ReadAggregatesAsync(from, to, ct);
 
-            int Sessions(string type) =>
-                totals.FirstOrDefault(t => t.EventType == type)?.Sessions ?? 0;
+            int Sessions(string type) => aggregates
+                .Where(a => a.EventType == type)
+                .Sum(a => a.UniqueSessions);
 
             var views = Sessions(AnalyticsEventType.PromotionView);
             var cart = Sessions(AnalyticsEventType.AddToCart);
@@ -111,17 +199,16 @@ namespace Storefront.Api.Services
         public async Task<List<PromotionPerformanceDto>> GetPromotionPerformanceAsync(
             DateOnly from, DateOnly to, int limit, CancellationToken ct = default)
         {
-            var counts = await _context.AnalyticsDaily
-                .AsNoTracking()
-                .Where(d => d.StatDate >= from && d.StatDate <= to && d.PromotionId != null)
-                .GroupBy(d => new { d.PromotionId, d.EventType })
+            var counts = (await ReadAggregatesAsync(from, to, ct))
+                .Where(a => a.PromotionId != null)
+                .GroupBy(a => new { PromotionId = a.PromotionId!.Value, a.EventType })
                 .Select(g => new
                 {
-                    PromotionId = g.Key.PromotionId!.Value,
+                    g.Key.PromotionId,
                     g.Key.EventType,
-                    Total = g.Sum(d => d.EventCount),
+                    Total = g.Sum(a => a.EventCount),
                 })
-                .ToListAsync(ct);
+                .ToList();
 
             var fromDate = from.ToDateTime(TimeOnly.MinValue);
             var toDate = to.ToDateTime(TimeOnly.MaxValue);
@@ -189,13 +276,12 @@ namespace Storefront.Api.Services
         // ===============================
         public async Task<List<DailyPointDto>> GetTimeSeriesAsync(
             string eventType, DateOnly from, DateOnly to, CancellationToken ct = default) =>
-            await _context.AnalyticsDaily
-                .AsNoTracking()
-                .Where(d => d.EventType == eventType && d.StatDate >= from && d.StatDate <= to)
-                .GroupBy(d => d.StatDate)
-                .Select(g => new DailyPointDto { Date = g.Key, Count = g.Sum(d => d.EventCount) })
+            (await ReadAggregatesAsync(from, to, ct))
+                .Where(a => a.EventType == eventType)
+                .GroupBy(a => a.Date)
+                .Select(g => new DailyPointDto { Date = g.Key, Count = g.Sum(a => a.EventCount) })
                 .OrderBy(p => p.Date)
-                .ToListAsync(ct);
+                .ToList();
 
         // ===============================
         // SALES
