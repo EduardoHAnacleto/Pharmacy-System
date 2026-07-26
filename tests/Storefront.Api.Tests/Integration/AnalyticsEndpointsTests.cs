@@ -51,13 +51,17 @@ public class AnalyticsEndpointsTests
 
         var before = await FunnelAsync(client);
 
-        // Two sessions, so the step counts are distinguishable from a single visit.
+        // Two fresh sessions, so the step counts are distinguishable from a single
+        // visit and cannot collide with a session another test already spent today.
+        var visitor = NewSession();
+        var other = NewSession();
+
         await TrackAsync(
-            (AnalyticsEventType.PromotionView, null, SessionA),
-            (AnalyticsEventType.PromotionView, null, SessionB),
-            (AnalyticsEventType.AddToCart, null, SessionA),
-            (AnalyticsEventType.CheckoutStarted, null, SessionA),
-            (AnalyticsEventType.WhatsAppClick, null, SessionA));
+            (AnalyticsEventType.PromotionView, null, visitor),
+            (AnalyticsEventType.PromotionView, null, other),
+            (AnalyticsEventType.AddToCart, null, visitor),
+            (AnalyticsEventType.CheckoutStarted, null, visitor),
+            (AnalyticsEventType.WhatsAppClick, null, visitor));
 
         var after = await FunnelAsync(client);
 
@@ -95,10 +99,12 @@ public class AnalyticsEndpointsTests
 
         var promotionId = await CreatePromotionAsync(client, "Desempenho de hoje");
 
+        var visitor = NewSession();
+
         await TrackAsync(
-            (AnalyticsEventType.PromotionView, promotionId, SessionA),
-            (AnalyticsEventType.PromotionView, promotionId, SessionB),
-            (AnalyticsEventType.AddToCart, promotionId, SessionA));
+            (AnalyticsEventType.PromotionView, promotionId, visitor),
+            (AnalyticsEventType.PromotionView, promotionId, NewSession()),
+            (AnalyticsEventType.AddToCart, promotionId, visitor));
 
         var ordered = await client.PostAsJsonAsync("/api/v1/orders", new
         {
@@ -157,9 +163,11 @@ public class AnalyticsEndpointsTests
 
         var before = await FunnelAsync(client, wide);
 
+        // Fresh sessions: the funnel counts distinct sessions, so reusing a key another
+        // test already spent today would add nothing and make this assert order.
         await TrackAsync(
-            (AnalyticsEventType.PromotionView, null, SessionA),
-            (AnalyticsEventType.PromotionView, null, SessionB));
+            (AnalyticsEventType.PromotionView, null, NewSession()),
+            (AnalyticsEventType.PromotionView, null, NewSession()));
 
         var after = await FunnelAsync(client, wide);
 
@@ -281,11 +289,13 @@ public class AnalyticsEndpointsTests
 
     private sealed record AcceptedCount(int Accepted);
 
-    // Fixed keys where a test needs two events correlated to one visit.
-    private const string SessionA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1";
-    private const string SessionB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2";
-
     /// <summary>A 32-character key, matching the char(32) column.</summary>
+    /// <remarks>
+    /// Every test mints its own. The funnel counts <em>distinct sessions</em>, so two
+    /// tests sharing a session key on the same day do not each add to it — a delta
+    /// assertion then depends on which test ran first, which is exactly how the
+    /// wide-range test failed while the narrow one passed.
+    /// </remarks>
     private static string NewSession() => Guid.NewGuid().ToString("N");
 
     private async Task<FunnelDto> FunnelAsync(HttpClient client, string? range = null) =>
