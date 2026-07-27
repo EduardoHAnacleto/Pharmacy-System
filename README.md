@@ -122,20 +122,41 @@ Decisões e seus motivos estão em [`docs/adr/`](docs/adr/).
 
 Precisa de Docker e Docker Compose.
 
+**1. Clonar e copiar o exemplo de configuração:**
+
 ```bash
 git clone https://github.com/EduardoHAnacleto/Pharmacy-System.git
 cd Pharmacy-System
+cp .env.example .env      # Windows: copy .env.example .env
+```
 
-cp .env.example .env
-# Preencha .env. Obrigatórios: MYSQL_*, REDIS_PASSWORD, JWT_SIGNING_KEY
-# (mínimo 32 caracteres — a API se recusa a subir com menos) e ADMIN_SEED_*.
-#   openssl rand -base64 48
-#
-# STORE_WHATSAPP_NUMBER é opcional: definida, o ambiente manda no número do
-# WhatsApp; vazia, quem manda é a tela /admin/settings.
+**2. Preencher o `.env`.** O `.env.example` vem com as senhas **em branco** de
+propósito — nenhum placeholder versionado que possa chegar a um servidor por
+descuido. Copiar sem preencher não sobe a stack. As sete obrigatórias:
 
+```
+MYSQL_ROOT_PASSWORD=     MYSQL_USER=     MYSQL_PASSWORD=
+REDIS_PASSWORD=          JWT_SIGNING_KEY=
+ADMIN_SEED_USERNAME=     ADMIN_SEED_PASSWORD=
+```
+
+`JWT_SIGNING_KEY` precisa de 32+ caracteres — a API recusa subir com menos.
+Gere as senhas com `openssl rand -base64 48`. Não use `$`, `#` ou aspas nos
+valores: o compose expande `$` e trata `#` como comentário.
+
+**3. Conferir e subir:**
+
+```bash
+docker compose config >/dev/null && echo ok    # valida sem iniciar nada
 docker compose up --build -d
 ```
+
+Se faltar alguma obrigatória, o compose para imediatamente nomeando a variável,
+em vez de deixar o MySQL falhar depois com `container storefront_db is unhealthy`.
+
+`STORE_WHATSAPP_NUMBER` é opcional: definida, o ambiente manda no número do
+WhatsApp; vazia, quem manda é a tela `/admin/settings`. As demais opcionais estão
+em [`docs/OPERACOES.md`](docs/OPERACOES.md) §1.
 
 - Vitrine: <http://localhost>
 - Administração: <http://localhost/login>

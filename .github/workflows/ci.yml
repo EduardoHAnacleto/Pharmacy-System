@@ -141,13 +141,48 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # .env.example carries every key the compose files reference, with empty
-      # values. This catches a variable added to compose but never documented,
-      # and any YAML or interpolation mistake.
-      - name: Validate production stack
-        run: docker compose --env-file .env.example config --quiet
+      # .env.example carries every key the compose files reference, with the
+      # secrets left empty. Those empty values now trip the `:?` guards, so the
+      # stacks are validated against a copy with placeholders substituted in.
+      # The copy is derived from .env.example rather than written as a fixture,
+      # so a key the example does not document stays undocumented here too.
+      - name: Fill the example with placeholders
+        run: sed -E 's/^([A-Z][A-Z0-9_]*)=$/\1=ci-placeholder/' .env.example > .env.ci
 
-      - name: Validate development stack
+      # Interpolating an undocumented variable is only fatal when it carries a
+      # `:?` guard; a bare one is substituted with an empty string and compose
+      # merely warns. That warning is promoted to a failure here, so every
+      # variable compose reads has to exist in .env.example whether it is
+      # guarded or not.
+      - name: Validate both stacks
         run: |
-          docker compose --env-file .env.example \
-            -f docker-compose.yml -f docker-compose.dev.yml config --quiet
+          validate() {
+            local label="$1"; shift
+            if ! docker compose --env-file .env.ci "$@" config --quiet 2>compose.err; then
+              cat compose.err >&2
+              echo "::error::$label: compose configuration is invalid"
+              return 1
+            fi
+            if grep -q 'variable is not set' compose.err; then
+              cat compose.err >&2
+              echo "::error::$label: compose reads a variable that .env.example" \
+                   "does not document; add it to .env.example"
+              return 1
+            fi
+            echo "ok: $label"
+          }
+          validate production
+          validate development -f docker-compose.yml -f docker-compose.dev.yml
+
+      # Asserts the guards themselves still exist: the unfilled example must be
+      # rejected. Without this, dropping a `:?` would go unnoticed — every step
+      # above would keep passing, and the silent-empty-value failure that this
+      # guards against would quietly come back.
+      - name: The unfilled example must be rejected
+        run: |
+          if docker compose --env-file .env.example config --quiet 2>/dev/null; then
+            echo "::error::.env.example validated with its secrets empty;" \
+                 "a required variable lost its ':?' guard in docker-compose.yml"
+            exit 1
+          fi
+          echo "ok: empty required variables are rejected"

@@ -94,14 +94,39 @@ You may upload via:
 
 ## 3️⃣ Configure Environment Variables
 
-Create a `.env` file in the root directory:
+Copy the example and fill it in — `.env.example` ships with its secrets empty on
+purpose, so no placeholder credential can reach a server by accident:
 
-Example:
+``` bash
+cp .env.example .env
+```
+
+Seven variables have no default and must be filled:
 
     MYSQL_ROOT_PASSWORD=StrongRootPassword
-    MYSQL_DATABASE=pharmacy_db
-    MYSQL_USER=pharmacy_user
+    MYSQL_USER=storefront
     MYSQL_PASSWORD=StrongUserPassword
+    REDIS_PASSWORD=StrongRedisPassword
+    JWT_SIGNING_KEY=<32+ characters, openssl rand -base64 48>
+    ADMIN_SEED_USERNAME=admin
+    ADMIN_SEED_PASSWORD=StrongAdminPassword
+
+`MYSQL_DATABASE` and `CORS_ALLOWED_ORIGINS` are required too but arrive with a
+working value; in production set `CORS_ALLOWED_ORIGINS` to the public URL of the
+frontend. Avoid `$`, `#` and quotes in values — compose expands `$` and treats
+`#` as a comment.
+
+Check the file before starting anything:
+
+``` bash
+docker compose config >/dev/null && echo ok
+```
+
+A missing required variable stops compose immediately and names it, rather than
+letting the database container fail later as `unhealthy`.
+
+The full list, including the optional variables, is in
+[`docs/OPERACOES.md`](docs/OPERACOES.md) §1.
 
 ⚠ Never commit real credentials to version control.
 
@@ -127,9 +152,10 @@ docker ps
 
 You should see:
 
--   pharmacy_frontend
--   pharmacy_api
--   pharmacy_db
+-   storefront_frontend
+-   storefront_api
+-   storefront_db
+-   storefront_redis
 
 ------------------------------------------------------------------------
 
@@ -187,13 +213,13 @@ This allows:
 To backup MySQL:
 
 ``` bash
-docker exec pharmacy_db mysqldump -u root -p pharmacy_db > backup.sql
+docker exec storefront_db mysqldump -u root -p pharmacy_db > backup.sql
 ```
 
 To restore:
 
 ``` bash
-docker exec -i pharmacy_db mysql -u root -p pharmacy_db < backup.sql
+docker exec -i storefront_db mysql -u root -p pharmacy_db < backup.sql
 ```
 
 Automate backups via cron job in production.

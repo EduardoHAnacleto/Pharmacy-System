@@ -8,6 +8,18 @@
 # procedure is in docs/OPERACOES.md.
 name: pharmacy-system
 
+# Required variables carry a `:?` guard, so an absent or empty value stops
+# compose at load time with the variable's name and how to fix it. Without the
+# guard an empty value is substituted silently and the failure surfaces much
+# later and much less clearly — an empty MYSQL_ROOT_PASSWORD reaches the MySQL
+# entrypoint, which refuses to initialise and leaves the stack looping on an
+# unhealthy container.
+#
+# One guard per variable is enough: compose interpolates the whole file before
+# starting anything, so the guard fires even when the service holding it is not
+# part of the command. Later reuses of the same variable are left bare on
+# purpose — repeating the message on every line costs readability and buys
+# nothing.
 services:
   # ==========================
   # DATABASE
@@ -17,10 +29,10 @@ services:
     container_name: storefront_db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set it in .env, see .env.example}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?set it in .env, see .env.example}
+      MYSQL_USER: ${MYSQL_USER:?set it in .env, see .env.example}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set it in .env, see .env.example}
     # Not published to the host: the database is only reachable from the
     # internal storefront_network. Use `docker compose exec db mysql ...` for
     # maintenance, or docker-compose.dev.yml to expose it locally.
@@ -54,7 +66,14 @@ services:
     image: redis:7
     container_name: storefront_redis
     restart: unless-stopped
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    command:
+      [
+        "redis-server",
+        "--requirepass",
+        "${REDIS_PASSWORD:?set it in .env, see .env.example}",
+        "--appendonly",
+        "yes",
+      ]
     volumes:
       - redis_data:/data
     healthcheck:
@@ -107,11 +126,15 @@ services:
       ConnectionStrings__DefaultConnection: >-
         server=db;port=3306;database=${MYSQL_DATABASE};user=${MYSQL_USER};password=${MYSQL_PASSWORD}
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
-      Cors__AllowedOrigins: ${CORS_ALLOWED_ORIGINS}
-      Jwt__SigningKey: ${JWT_SIGNING_KEY}
-      # Used only while the users table is empty; see DatabaseSeeder.
-      AdminSeed__Username: ${ADMIN_SEED_USERNAME}
-      AdminSeed__Password: ${ADMIN_SEED_PASSWORD}
+      Cors__AllowedOrigins: ${CORS_ALLOWED_ORIGINS:?set it in .env, see .env.example}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?set it in .env, see .env.example}
+      # Used only while the users table is empty; see DatabaseSeeder. Optional
+      # on purpose, and therefore NOT guarded: a redeploy over a database that
+      # already has its admin account does not need them, and the seeder skips
+      # with a warning when either is empty. Guarding them would break exactly
+      # the deployment that has nothing left to seed.
+      AdminSeed__Username: ${ADMIN_SEED_USERNAME:-}
+      AdminSeed__Password: ${ADMIN_SEED_PASSWORD:-}
       AdminSeed__Email: ${ADMIN_SEED_EMAIL:-}
       # Seed the store_settings row once, while the table is empty, so a new
       # deployment arrives presentable. After that the admin screen owns these —

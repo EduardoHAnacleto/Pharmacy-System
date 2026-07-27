@@ -7,22 +7,71 @@ que cobre a instalação inicial do servidor.
 
 ## 1. Variáveis de ambiente
 
-O `.env` na raiz é obrigatório e **não é versionado**. Copie o `.env.example` e
-preencha. As variáveis abaixo não têm valor padrão — sem elas o backend recusa
-subir, por desenho:
+O `.env` na raiz é obrigatório e **não é versionado**. **Copiar o `.env.example`
+não basta** — ele vem com as senhas em branco de propósito, para que nenhum valor
+placeholder chegue a um servidor por descuido. Um `.env` copiado e não preenchido
+não sobe a stack.
 
-| Variável | Como gerar |
-|---|---|
-| `JWT_SIGNING_KEY` | `openssl rand -base64 48`. Mínimo 32 caracteres. Trocar invalida todos os tokens e desloga todos os admins |
-| `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD` | senhas fortes distintas |
-| `REDIS_PASSWORD` | `openssl rand -base64 24` |
-| `ADMIN_SEED_USERNAME`, `ADMIN_SEED_PASSWORD` | credenciais do primeiro admin |
-| `CORS_ALLOWED_ORIGINS` | URL pública do frontend, ex. `https://loja.exemplo.com` |
+### Procedimento
 
-O `ADMIN_SEED_*` é usado **uma única vez**, e só enquanto a tabela `users`
-estiver vazia. Depois disso o valor é ignorado — mudar a senha aqui não muda a
-senha da conta. Se as duas variáveis ficarem em branco, nenhuma conta é criada:
-o sistema prefere ficar sem login utilizável a ter um login padrão conhecido.
+1. **Copie o exemplo.**
+
+   ```bash
+   cp .env.example .env      # Windows: copy .env.example .env
+   ```
+
+2. **Preencha as sete obrigatórias.** Nenhuma tem valor padrão:
+
+   | Variável | Como gerar |
+   |---|---|
+   | `MYSQL_ROOT_PASSWORD` | senha forte, usada só pelo container do MySQL e pelo seu healthcheck |
+   | `MYSQL_USER` | nome do usuário da aplicação, ex. `storefront` — não use `root` |
+   | `MYSQL_PASSWORD` | senha forte, **distinta** da de root |
+   | `REDIS_PASSWORD` | `openssl rand -base64 24` |
+   | `JWT_SIGNING_KEY` | `openssl rand -base64 48`. Mínimo 32 caracteres — a API recusa subir com menos. Trocar invalida todos os tokens e desloga todos os admins |
+   | `ADMIN_SEED_USERNAME` | usuário do primeiro admin |
+   | `ADMIN_SEED_PASSWORD` | senha do primeiro admin |
+
+   `MYSQL_DATABASE` e `CORS_ALLOWED_ORIGINS` também são obrigatórias, mas já
+   chegam preenchidas com um valor que funciona localmente. Em produção,
+   `CORS_ALLOWED_ORIGINS` precisa da URL pública do frontend, ex.
+   `https://loja.exemplo.com` — nenhuma origem fora dessa lista consegue chamar
+   a API.
+
+   Sem `$`, `#` ou aspas nos valores: o compose expande `$` como variável e
+   trata `#` como início de comentário.
+
+3. **Confira antes de subir.** Isto valida a interpolação sem iniciar nada:
+
+   ```bash
+   docker compose config >/dev/null && echo ok
+   ```
+
+Faltando qualquer obrigatória, o compose **para na hora** e diz qual é:
+
+```
+error while interpolating services.db.environment.MYSQL_ROOT_PASSWORD:
+required variable MYSQL_ROOT_PASSWORD is missing a value: set it in .env, see .env.example
+```
+
+Isso vem das guardas `:?` no `docker-compose.yml`. Antes delas um valor vazio era
+substituído em silêncio e a falha aparecia meio minuto depois, no log do MySQL,
+como `Database is uninitialized and password option is not specified` seguido de
+`container storefront_db is unhealthy` — mensagem que não nomeia o `.env` nem
+sugere o que fazer.
+
+### O par de seed do admin
+
+`ADMIN_SEED_USERNAME` e `ADMIN_SEED_PASSWORD` são usados **uma única vez**, e só
+enquanto a tabela `users` estiver vazia. Depois disso são ignorados — mudar a
+senha aqui não muda a senha da conta. Se ficarem em branco, nenhuma conta é
+criada: o sistema prefere ficar sem login utilizável a ter um login padrão
+conhecido.
+
+Por isso os dois **não** têm guarda `:?`, ao contrário das outras obrigatórias:
+um redeploy sobre um banco que já tem o admin não precisa deles, e uma guarda
+quebraria justamente o deploy que não tem mais nada a semear. Numa instalação
+nova, preencha.
 
 ### Opcionais
 
@@ -30,13 +79,23 @@ Todas têm default e nenhuma impede a aplicação de subir.
 
 | Variável | Para quê |
 |---|---|
-| `Store__Name`, `Store__Currency`, `Store__Locale`, `Store__CountryCode`, `Store__TimeZone`, `Store__WhatsAppNumber`, `Store__LogoUrl` | Valores iniciais da linha de `store_settings`, gravados **uma única vez**, na primeira subida com a tabela vazia. Serve para um deploy novo já chegar apresentável; depois disso a fonte de verdade é a tela `/admin/settings` |
-| `OpenTelemetry__OtlpEndpoint` | Endereço do coletor OTLP, ex. `http://otel-collector:4317`. Sem ele a instrumentação roda e nada é exportado — não há caminho de código separado para um deploy sem coletor |
-| `OpenTelemetry__ServiceName` | Nome do serviço nos traces. Default `storefront-api`; vale distinguir quando houver mais de uma loja no mesmo coletor |
-| `RateLimit__LoginPermitLimit`, `RateLimit__LoginWindowMinutes` | Ajuste do limite de tentativas de login por IP |
+| `STORE_NAME`, `STORE_CURRENCY`, `STORE_LOCALE`, `STORE_COUNTRY_CODE`, `STORE_TIME_ZONE`, `STORE_LOGO_URL` | Valores iniciais da linha de `store_settings`, gravados **uma única vez**, na primeira subida com a tabela vazia. Serve para um deploy novo já chegar apresentável; depois disso a fonte de verdade é a tela `/admin/settings` |
+| `STORE_WHATSAPP_NUMBER` | Exceção à regra acima: é override **vivo**, reaplicado a cada leitura. Ver §8 |
+| `ANALYTICS_RAW_RETENTION_DAYS` | Janela de retenção do `analytics_events` bruto. Default 90 |
+| `OTLP_ENDPOINT` | Endereço do coletor OTLP, ex. `http://otel-collector:4317`. Sem ele a instrumentação roda e nada é exportado — não há caminho de código separado para um deploy sem coletor |
+| `OTEL_SERVICE_NAME` | Nome do serviço nos traces. Default `storefront-api`; vale distinguir quando houver mais de uma loja no mesmo coletor |
 
-> O separador `__` (dois sublinhados) é como o .NET mapeia variável de ambiente
-> para configuração aninhada: `Store__Name` é `Store:Name`.
+> **Os nomes acima são os do `.env`.** Dentro do container eles chegam com o
+> nome que o .NET espera, mapeado pelo `docker-compose.yml`: `STORE_NAME` vira
+> `Store__Name`, `OTLP_ENDPOINT` vira `OpenTelemetry__OtlpEndpoint`. O separador
+> `__` é como o .NET representa configuração aninhada (`Store__Name` é
+> `Store:Name`). Escrever `Store__Name=` no `.env` **não tem efeito** — nada no
+> compose lê esse nome.
+
+O limite de tentativas de login (`RateLimit:LoginPermitLimit`,
+`RateLimit:LoginWindowMinutes`) fica no `backend/appsettings.json` e **não** é
+exposto como variável de ambiente. Ajustar exige editar o arquivo e reconstruir a
+imagem do backend.
 
 ### Configuração que **não** é variável de ambiente
 
