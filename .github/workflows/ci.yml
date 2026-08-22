@@ -173,6 +173,7 @@ jobs:
           }
           validate production
           validate development -f docker-compose.yml -f docker-compose.dev.yml
+          validate test -f docker-compose.yml -f docker-compose.test.yml
 
       # Asserts the guards themselves still exist: the unfilled example must be
       # rejected. Without this, dropping a `:?` would go unnoticed — every step
