@@ -107,14 +107,21 @@ echo "==> Building and starting (the first run can take a few minutes)"
 admin_user=$(grep '^ADMIN_SEED_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
 admin_pass=$(grep '^ADMIN_SEED_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
 
+# The URLs below say 127.0.0.1, not localhost. Compose publishes these ports on
+# 127.0.0.1, which is IPv4 only, while `localhost` resolves to ::1 first
+# wherever /etc/hosts lists it there. With nothing on ::1 the browser falls back
+# to IPv4 and the difference never shows, but a process holding the port on ::1
+# or :: answers instead - silently, with its own error page. The literal address
+# is always this stack. CORS_ALLOWED_ORIGINS covers both spellings.
+
 cat <<EOF
 
 Test stack is up.
 
-  Storefront   http://localhost:$STOREFRONT_PORT
-  Admin        http://localhost:$STOREFRONT_PORT/login
-  Swagger      http://localhost:$API_PORT/swagger
-  Health       http://localhost:$API_PORT/health
+  Storefront   http://127.0.0.1:$STOREFRONT_PORT
+  Admin        http://127.0.0.1:$STOREFRONT_PORT/login
+  Swagger      http://127.0.0.1:$API_PORT/swagger
+  Health       http://127.0.0.1:$API_PORT/health
 
   user  $admin_user
   pass  $admin_pass

@@ -289,11 +289,47 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- Ports must be free ----------------------------------------------------
 
-# Binding is the only honest test: it catches an ordinary listener and the
-# ranges Windows reserves for Hyper-V and WSL2 alike, which `netstat` does not
-# show as occupied but Docker still cannot bind.
+# There are two questions here, and binding only answers the first.
+#
+# Can the port be bound? Binding is the only honest test for the ranges Windows
+# reserves for Hyper-V and WSL2, which `netstat` does not show as occupied but
+# Docker still cannot bind.
+#
+# Will the URL this script prints actually reach the stack? That is a separate
+# question, and on Windows the answer can be no even when the bind succeeds.
+# Windows allows a bind to 127.0.0.1 while another process already serves the
+# same port on 0.0.0.0 - the more specific bind simply wins for that one
+# address - and `localhost` resolves to ::1 before 127.0.0.1. So the stack can
+# take 127.0.0.1:8081 cleanly, report success, and still hand the browser a
+# different project's server on ::1:8081. Expo's dev server defaults to exactly
+# that port and binds both wildcards, which is how this was found.
+#
+# Rejecting the port in both cases is right: what the user needs is a port that
+# is theirs on every address `localhost` can resolve to.
 function Test-PortFree {
     param([Parameter(Mandatory)][int]$Port)
+
+    # A listener on any of these either refuses our bind or shadows the URL.
+    $shadowing = @(
+        [System.Net.IPAddress]::Any,           # 0.0.0.0
+        [System.Net.IPAddress]::IPv6Any,       # ::
+        [System.Net.IPAddress]::Loopback,      # 127.0.0.1
+        [System.Net.IPAddress]::IPv6Loopback   # ::1
+    )
+    try {
+        $active = [System.Net.NetworkInformation.IPGlobalProperties]::
+            GetIPGlobalProperties().GetActiveTcpListeners()
+        foreach ($endpoint in $active) {
+            if ($endpoint.Port -eq $Port -and $shadowing -contains $endpoint.Address) {
+                return $false
+            }
+        }
+    }
+    catch {
+        # No listener table is a reason to fall through to the bind, not to
+        # call the port taken.
+    }
+
     $listener = $null
     try {
         $listener = New-Object System.Net.Sockets.TcpListener(
@@ -328,6 +364,10 @@ if (-not $stackAlreadyUp) {
         Write-Host ''
         Write-Host 'Find what holds it:'
         foreach ($p in $blocked) { Write-Host "  netstat -ano | findstr :$($p.Port)" }
+        Write-Host 'A listener on 0.0.0.0 or [::] counts, even though binding'
+        Write-Host '127.0.0.1 would still succeed next to it: `localhost` resolves to ::1'
+        Write-Host 'first on Windows, so that process would answer the browser instead of'
+        Write-Host 'this stack. Node and Expo dev servers default to 8081.'
         Write-Host 'Windows also reserves ranges for Hyper-V and WSL2, which show as free:'
         Write-Host '  netsh int ipv4 show excludedportrange protocol=tcp'
         Write-Host 'Or move the stack somewhere else, for example:'
@@ -366,10 +406,17 @@ $adminPass = Get-EnvValue 'ADMIN_SEED_PASSWORD'
 Write-Host ''
 Write-Host 'Test stack is up.' -ForegroundColor Green
 Write-Host ''
-Write-Host "  Storefront   http://localhost:$StorefrontPort"
-Write-Host "  Admin        http://localhost:$StorefrontPort/login"
-Write-Host "  Swagger      http://localhost:$ApiPort/swagger"
-Write-Host "  Health       http://localhost:$ApiPort/health"
+# 127.0.0.1, not localhost. Compose publishes these ports on 127.0.0.1, which
+# is IPv4 only, while Windows resolves `localhost` to ::1 first. With nothing
+# on ::1 the browser just falls back to IPv4 and the difference is invisible,
+# but anything else holding the port on ::1 or :: answers instead - silently,
+# and with its own error page. The literal address is the one that is always
+# this stack. CORS_ALLOWED_ORIGINS covers both spellings, so either works once
+# the port is genuinely free.
+Write-Host "  Storefront   http://127.0.0.1:$StorefrontPort"
+Write-Host "  Admin        http://127.0.0.1:$StorefrontPort/login"
+Write-Host "  Swagger      http://127.0.0.1:$ApiPort/swagger"
+Write-Host "  Health       http://127.0.0.1:$ApiPort/health"
 Write-Host ''
 Write-Host "  user  $adminUser"
 Write-Host "  pass  $adminPass"
