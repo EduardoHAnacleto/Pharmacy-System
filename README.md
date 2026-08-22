@@ -184,6 +184,18 @@ sobe tudo. Ao final imprime as URLs e o usuário e senha do admin.
 | Administração | <http://localhost:8080/login> |
 | Swagger | <http://localhost:5001/swagger> |
 
+Se alguma dessas portas já estiver ocupada, o script avisa antes de subir
+qualquer coisa e aceita outras — no Windows o IIS costuma ficar com a 8080, e o
+Hyper-V e o WSL2 reservam faixas que o `netstat` mostra como livres:
+
+```powershell
+.\scripts\test-up.ps1 -StorefrontPort 8081 -ApiPort 5002
+```
+
+```bash
+STOREFRONT_PORT=8081 API_PORT=5002 ./scripts/test-up.sh
+```
+
 Ela usa nome de projeto, containers, portas e volumes próprios, então convive
 com uma instalação real na mesma máquina sem tocar no banco dela. Para derrubar
 e apagar os dados:

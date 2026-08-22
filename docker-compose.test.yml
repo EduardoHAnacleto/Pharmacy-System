@@ -12,7 +12,10 @@
 #      touch a real deployment's database, Redis file or uploaded images. The
 #      test stack can be destroyed with `down -v` at any time.
 #   2. Its own container names and host ports, so it runs alongside a real
-#      stack instead of colliding with it.
+#      stack instead of colliding with it. The ports are overridable because
+#      Windows hands 8080 to IIS and reserves scattered ranges for Hyper-V and
+#      WSL2; the scripts write TEST_STOREFRONT_PORT and TEST_API_PORT into
+#      .env.test, together with the matching CORS origins.
 #   3. restart: "no" everywhere. The production stack uses `unless-stopped`,
 #      which turns a misconfiguration into an endless restart loop that buries
 #      the original error. Here the first failure stops the container and stays
@@ -42,10 +45,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
     ports:
-      - "127.0.0.1:5001:80"
+      - "127.0.0.1:${TEST_API_PORT:-5001}:80"
 
   frontend:
     container_name: storefront_test_frontend
     restart: "no"
     ports: !override
-      - "127.0.0.1:8080:80"
+      - "127.0.0.1:${TEST_STOREFRONT_PORT:-8080}:80"
