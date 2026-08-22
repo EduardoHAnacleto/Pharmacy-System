@@ -47,6 +47,24 @@ não sobe a stack.
    docker compose config >/dev/null && echo ok
    ```
 
+   Quando ele reclamar de uma variável que está visivelmente preenchida, use o
+   `env-doctor` — ele diz *por quê*:
+
+   ```bash
+   ./scripts/env-doctor.sh       # Linux/macOS
+   ```
+
+   ```powershell
+   .\scripts\env-doctor.ps1     # Windows
+   ```
+
+   Não altera nada e nunca imprime um valor, só o tamanho, então a saída pode ir
+   para um chamado. Cobre o arquivo com o nome errado (`.env.txt`), o arquivo em
+   UTF-16, valores truncados por `$` ou por ` #`, chaves repetidas, e os casos
+   que o compose aceita e a aplicação recusa depois: `JWT_SIGNING_KEY` com menos
+   de 32 caracteres, `MYSQL_USER=root`, e o par de seed do admin em branco numa
+   instalação nova.
+
 Faltando qualquer obrigatória, o compose **para na hora** e diz qual é:
 
 ```

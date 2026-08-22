@@ -146,10 +146,22 @@ valores: o compose expande `$` e trata `#` como comentário.
 
 **3. Conferir e subir:**
 
+```powershell
+.\scripts\env-doctor.ps1     # Windows
+```
+
 ```bash
-docker compose config >/dev/null && echo ok    # valida sem iniciar nada
+./scripts/env-doctor.sh       # Linux/macOS
 docker compose up --build -d
 ```
+
+O `env-doctor` lê o `.env`, não muda nada e nunca imprime uma senha — só se está
+preenchida e de que tamanho. Ele checa o que o `docker compose config` sozinho
+não explica: o arquivo salvo como `.env.txt` (o Explorer esconde a extensão), o
+arquivo em UTF-16 (o `>` do PowerShell 5.1 grava assim e o compose lê como
+ruído), um `$` ou um ` #` que o compose come em silêncio, e uma
+`JWT_SIGNING_KEY` curta demais — que passa pelo compose e derruba a API depois.
+No fim ele roda o próprio `docker compose config` como confirmação.
 
 Se faltar alguma obrigatória, o compose para imediatamente nomeando a variável,
 em vez de deixar o MySQL falhar depois com `container storefront_db is unhealthy`.
