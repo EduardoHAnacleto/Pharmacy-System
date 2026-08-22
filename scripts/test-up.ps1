@@ -128,18 +128,36 @@ function Protect-File {
     $onWindows = ($PSVersionTable.PSVersion.Major -lt 6) -or $IsWindows
     if (-not $onWindows) { return }
 
+    # icacls, not Get-Acl/Set-Acl. Set-Acl writes the whole security descriptor,
+    # and once this file's DACL is protected - which is exactly what the first
+    # run makes it - writing it back asks for SeSecurityPrivilege, a privilege
+    # an ordinary user does not hold. So the first run succeeded and every run
+    # after it warned about a file that was already correct, while a DACL that
+    # really had drifted could never be repaired. icacls edits the DACL alone,
+    # needs no privilege, and is idempotent.
+    #
+    # /inheritance:r drops the inherited entries, which on a file this script
+    # just created are all of them; /grant:r then leaves the current user as the
+    # only entry. The SID rather than the account name, so nothing depends on
+    # how the account is spelled or localised.
+    #
+    # icacls' stderr is not redirected, for the reason spelled out above
+    # Invoke-Docker: only its "processed file" chatter on stdout is discarded,
+    # and the exit code decides.
+    $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $global:LASTEXITCODE = 0
     try {
-        $acl = Get-Acl -LiteralPath $Path
-        $acl.SetAccessRuleProtection($true, $false)
-        foreach ($rule in @($acl.Access)) { [void]$acl.RemoveAccessRule($rule) }
-        $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
-        $acl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
-            $identity, 'FullControl', 'Allow')))
-        Set-Acl -LiteralPath $Path -AclObject $acl
+        & icacls.exe $Path /inheritance:r /grant:r "*${sid}:(F)" | Out-Null
     }
     catch {
         Write-Host "  note: could not restrict permissions on $Path" -ForegroundColor Yellow
         Write-Host "  ($($_.Exception.Message))" -ForegroundColor Yellow
+        return
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  note: could not restrict permissions on $Path" -ForegroundColor Yellow
+        Write-Host "  (icacls exited $LASTEXITCODE - the file holds the database root" -ForegroundColor Yellow
+        Write-Host "  password, the JWT signing key and the admin password)" -ForegroundColor Yellow
     }
 }
 
