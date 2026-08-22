@@ -1,0 +1,51 @@
+# Throwaway stack for inspecting the project locally.
+#
+#   scripts/test-up.ps1     (Windows)
+#   scripts/test-up.sh      (Linux/macOS)
+#
+# Run it through those scripts rather than by hand: they generate the .env.test
+# this stack reads, so there is nothing to fill in and nothing to get wrong.
+#
+# Three things separate it from the production and dev stacks:
+#
+#   1. Its own project name, so its volumes are storefront-test_* and it cannot
+#      touch a real deployment's database, Redis file or uploaded images. The
+#      test stack can be destroyed with `down -v` at any time.
+#   2. Its own container names and host ports, so it runs alongside a real
+#      stack instead of colliding with it.
+#   3. restart: "no" everywhere. The production stack uses `unless-stopped`,
+#      which turns a misconfiguration into an endless restart loop that buries
+#      the original error. Here the first failure stops the container and stays
+#      on screen.
+#
+# Ports bind to 127.0.0.1 explicitly: this stack has generated credentials and
+# runs in Development, with Swagger and exception pages on. It must never be
+# reachable from outside the machine.
+name: storefront-test
+
+services:
+  db:
+    container_name: storefront_test_db
+    restart: "no"
+
+  redis:
+    container_name: storefront_test_redis
+    restart: "no"
+
+  migrator:
+    container_name: storefront_test_migrator
+    restart: "no"
+
+  backend:
+    container_name: storefront_test_api
+    restart: "no"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "127.0.0.1:5001:80"
+
+  frontend:
+    container_name: storefront_test_frontend
+    restart: "no"
+    ports: !override
+      - "127.0.0.1:8080:80"

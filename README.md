@@ -162,6 +162,41 @@ em [`docs/OPERACOES.md`](docs/OPERACOES.md) §1.
 - Administração: <http://localhost/login>
 - Health: <http://localhost:5000/health> e `/health/ready`
 
+### Só quero ver rodando
+
+Para inspecionar o projeto sem configurar nada, há uma stack descartável que
+gera as próprias credenciais:
+
+```powershell
+.\scripts\test-up.ps1      # Windows
+```
+
+```bash
+./scripts/test-up.sh       # Linux/macOS
+```
+
+O script cria um `.env.test` com senhas aleatórias, valida a configuração e
+sobe tudo. Ao final imprime as URLs e o usuário e senha do admin.
+
+| | |
+|---|---|
+| Vitrine | <http://localhost:8080> |
+| Administração | <http://localhost:8080/login> |
+| Swagger | <http://localhost:5001/swagger> |
+
+Ela usa nome de projeto, containers, portas e volumes próprios, então convive
+com uma instalação real na mesma máquina sem tocar no banco dela. Para derrubar
+e apagar os dados:
+
+```bash
+docker compose --env-file .env.test \
+  -f docker-compose.yml -f docker-compose.test.yml down -v
+```
+
+> É uma stack de teste: roda em `Development`, com Swagger e páginas de exceção
+> ligados, e publica as portas apenas em `127.0.0.1`. Não use para nada além de
+> olhar o projeto na sua máquina.
+
 Sem Docker, para desenvolvimento:
 
 ```bash
