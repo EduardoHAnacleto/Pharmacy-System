@@ -61,3 +61,78 @@ body {
 a {
   color: var(--brand-primary);
 }
+
+/*
+ * ENDING SOON
+ *
+ * A promotion in its final week gets a countdown badge, a coloured edge and a
+ * coloured validity line. Three signals for one fact on purpose: colour is never
+ * the only carrier, so the card still reads as urgent to someone who cannot
+ * separate red from grey, and the badge spells the deadline out in words.
+ *
+ * Deliberately not --brand-primary. Urgency has to read as urgency whatever
+ * colour a shop picked for itself, and a countdown drawn in the brand colour
+ * looks like decoration. This red is dark enough to clear 4.5:1 against white
+ * text, which Bootstrap's own #dc3545 does not.
+ *
+ * .card.promo-ending, not .promo-ending: main.css is imported before Bootstrap,
+ * so a single class would tie with .card on specificity and lose to whichever
+ * loads later. Two classes win it outright, without reaching for !important.
+ */
+:root {
+  --promo-ending: #b02a37;
+}
+
+.card.promo-ending {
+  border: 2px solid var(--promo-ending);
+  box-shadow: 0 0.5rem 1rem rgba(176, 42, 55, 0.15);
+}
+
+.promo-ending__badge {
+  /* .card is position: relative in Bootstrap, so this anchors to the card. */
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+
+  border-radius: 50rem;
+  background-color: var(--promo-ending);
+  color: #fff;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+
+  /* The badge sits on an uploaded photo of unknown brightness. */
+  box-shadow: 0 0.125rem 0.35rem rgba(0, 0, 0, 0.3);
+}
+
+.promo-ending__badge--critical {
+  animation: promo-ending-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes promo-ending-pulse {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-ending__badge--critical {
+    animation: none;
+  }
+}
+
+/*
+ * Replaces .text-muted rather than layering over it: Bootstrap sets that colour
+ * with !important, so both cannot apply and the muted grey would win.
+ */
+.promo-ending__validity {
+  color: var(--promo-ending);
+  font-weight: 600;
+}

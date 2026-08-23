@@ -32,6 +32,12 @@ export default {
     add: 'Adicionar',
     imageAlt: 'Imagem de {name}',
     validity: 'Promoção válida de {from} até {to}',
+
+    // Countdown carried by a promotion in its final week. daysLeft is only ever
+    // reached with two days or more, so it needs no singular form.
+    endingToday: 'Último dia',
+    endingTomorrow: 'Termina amanhã',
+    daysLeft: 'Faltam {count} dias',
   },
 
   filters: {
