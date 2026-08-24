@@ -146,10 +146,22 @@ valores: o compose expande `$` e trata `#` como comentário.
 
 **3. Conferir e subir:**
 
+```powershell
+.\scripts\env-doctor.ps1     # Windows
+```
+
 ```bash
-docker compose config >/dev/null && echo ok    # valida sem iniciar nada
+./scripts/env-doctor.sh       # Linux/macOS
 docker compose up --build -d
 ```
+
+O `env-doctor` lê o `.env`, não muda nada e nunca imprime uma senha — só se está
+preenchida e de que tamanho. Ele checa o que o `docker compose config` sozinho
+não explica: o arquivo salvo como `.env.txt` (o Explorer esconde a extensão), o
+arquivo em UTF-16 (o `>` do PowerShell 5.1 grava assim e o compose lê como
+ruído), um `$` ou um ` #` que o compose come em silêncio, e uma
+`JWT_SIGNING_KEY` curta demais — que passa pelo compose e derruba a API depois.
+No fim ele roda o próprio `docker compose config` como confirmação.
 
 Se faltar alguma obrigatória, o compose para imediatamente nomeando a variável,
 em vez de deixar o MySQL falhar depois com `container storefront_db is unhealthy`.
@@ -183,6 +195,18 @@ sobe tudo. Ao final imprime as URLs e o usuário e senha do admin.
 | Vitrine | <http://localhost:8080> |
 | Administração | <http://localhost:8080/login> |
 | Swagger | <http://localhost:5001/swagger> |
+
+Se alguma dessas portas já estiver ocupada, o script avisa antes de subir
+qualquer coisa e aceita outras — no Windows o IIS costuma ficar com a 8080, e o
+Hyper-V e o WSL2 reservam faixas que o `netstat` mostra como livres:
+
+```powershell
+.\scripts\test-up.ps1 -StorefrontPort 8081 -ApiPort 5002
+```
+
+```bash
+STOREFRONT_PORT=8081 API_PORT=5002 ./scripts/test-up.sh
+```
 
 Ela usa nome de projeto, containers, portas e volumes próprios, então convive
 com uma instalação real na mesma máquina sem tocar no banco dela. Para derrubar

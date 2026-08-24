@@ -6,12 +6,23 @@ export interface ItemPromotion {
   name: string
 
   price: number
-  priceBefore: number
+
+  /** Null when the item has no original price to strike through. */
+  priceBefore: number | null
 
   imageUrl: string
 
   dateStart: string // ISO string
   dateEnd: string // ISO string
+
+  /**
+   * True when the item may only be dispensed against a prescription.
+   *
+   * Nothing on the storefront enforces it — the order still completes over
+   * WhatsApp, where a pharmacist handles it. What it buys is telling the
+   * customer before they build a basket they cannot collect without a doctor.
+   */
+  requiresPrescription: boolean
 
   /** Replaces the old isActive boolean, which collapsed four states into false. */
   status: PromotionStatus

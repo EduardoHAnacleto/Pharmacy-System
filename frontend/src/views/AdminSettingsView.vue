@@ -323,6 +323,52 @@
               </div>
             </div>
 
+            <!--
+              COMPLIANCE
+
+              What a customer looks for before sending money to a pharmacy they
+              have not used, and what the footer carried none of. Each line shows
+              only when filled in, so a shop mid-setup renders nothing rather
+              than an empty label.
+            -->
+            <div class="row g-3 mt-1">
+              <div class="col-md-4">
+                <label class="form-label" for="business-number">
+                  {{ t('admin.businessNumber') }}
+                </label>
+                <input
+                  id="business-number"
+                  v-model="businessNumberInput"
+                  class="form-control"
+                  maxlength="40"
+                />
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="technical-manager">
+                  {{ t('admin.technicalManagerName') }}
+                </label>
+                <input
+                  id="technical-manager"
+                  v-model="technicalManagerNameInput"
+                  class="form-control"
+                  maxlength="120"
+                />
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="technical-manager-license">
+                  {{ t('admin.technicalManagerLicense') }}
+                </label>
+                <input
+                  id="technical-manager-license"
+                  v-model="technicalManagerLicenseInput"
+                  class="form-control"
+                  maxlength="60"
+                />
+              </div>
+            </div>
+
             <div class="mt-3">
               <label class="form-label" for="footer-text">{{ t('admin.footerText') }}</label>
               <input id="footer-text" v-model="footerInput" class="form-control" maxlength="300" />
@@ -376,6 +422,9 @@ const whatsAppInput = nullable('whatsAppNumber')
 const emailInput = nullable('email')
 const instagramInput = nullable('instagramUrl')
 const facebookInput = nullable('facebookUrl')
+const businessNumberInput = nullable('businessNumber')
+const technicalManagerNameInput = nullable('technicalManagerName')
+const technicalManagerLicenseInput = nullable('technicalManagerLicense')
 const footerInput = nullable('footerText')
 
 function nullable(key: keyof StoreSettings) {

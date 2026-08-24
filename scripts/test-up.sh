@@ -2,6 +2,7 @@
 # Brings up the throwaway test stack on Linux/macOS.
 #
 #   ./scripts/test-up.sh
+#   STOREFRONT_PORT=8081 API_PORT=5002 ./scripts/test-up.sh
 #
 # Generates .env.test with random credentials on first run, validates the
 # configuration, then starts the stack. Nothing to fill in by hand — the point
@@ -14,6 +15,15 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 ENV_FILE="$REPO_ROOT/.env.test"
+
+# The published ports. Overridable for the same reason the Windows script takes
+# parameters: something else on the machine may already own 8080 or 5001.
+STOREFRONT_PORT="${STOREFRONT_PORT:-8080}"
+API_PORT="${API_PORT:-5001}"
+if [[ "$STOREFRONT_PORT" == "$API_PORT" ]]; then
+  echo "error: the storefront and the API cannot share port $STOREFRONT_PORT" >&2
+  exit 1
+fi
 COMPOSE=(docker compose --env-file "$ENV_FILE"
          -f docker-compose.yml -f docker-compose.test.yml)
 
@@ -41,7 +51,12 @@ MYSQL_USER=storefront
 MYSQL_PASSWORD=$(secret 32)
 REDIS_PASSWORD=$(secret 32)
 
-CORS_ALLOWED_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
+# The published ports, and the origins the API will accept. These three move
+# together: the browser calls the API from the storefront origin, so a port
+# changed without its CORS entry blocks every request.
+TEST_STOREFRONT_PORT=$STOREFRONT_PORT
+TEST_API_PORT=$API_PORT
+CORS_ALLOWED_ORIGINS=http://localhost:$STOREFRONT_PORT,http://127.0.0.1:$STOREFRONT_PORT
 JWT_SIGNING_KEY=$(secret 64)
 
 ADMIN_SEED_USERNAME=admin
@@ -53,7 +68,7 @@ STORE_CURRENCY=BRL
 STORE_LOCALE=pt-BR
 STORE_COUNTRY_CODE=BR
 STORE_TIME_ZONE=America/Sao_Paulo
-STORE_LOGO_URL=/logoFarma.png
+STORE_LOGO_URL=/logoFarma.jpg
 STORE_WHATSAPP_NUMBER=
 
 ANALYTICS_RAW_RETENTION_DAYS=90
@@ -63,6 +78,24 @@ EOF
   chmod 600 "$ENV_FILE"
 else
   echo "==> Reusing the existing .env.test"
+
+  # Reconcile the ports, so an override works on the second run too. Only these
+  # three lines are touched: regenerating the credentials would not change the
+  # admin account, which is seeded once while the users table is empty, and
+  # would leave the printed password wrong.
+  set_env_line() {
+    local key=$1 value=$2
+    if grep -q "^$key=" "$ENV_FILE"; then
+      # The values here are a port number or a list of http:// origins, so no
+      # sed metacharacter can reach the replacement.
+      sed -i.bak "s|^$key=.*|$key=$value|" "$ENV_FILE" && rm -f "$ENV_FILE.bak"
+    else
+      printf '%s=%s\n' "$key" "$value" >> "$ENV_FILE"
+    fi
+  }
+  set_env_line TEST_STOREFRONT_PORT "$STOREFRONT_PORT"
+  set_env_line TEST_API_PORT "$API_PORT"
+  set_env_line CORS_ALLOWED_ORIGINS "http://localhost:$STOREFRONT_PORT,http://127.0.0.1:$STOREFRONT_PORT"
 fi
 
 echo "==> Validating the configuration"
@@ -74,14 +107,21 @@ echo "==> Building and starting (the first run can take a few minutes)"
 admin_user=$(grep '^ADMIN_SEED_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
 admin_pass=$(grep '^ADMIN_SEED_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
 
+# The URLs below say 127.0.0.1, not localhost. Compose publishes these ports on
+# 127.0.0.1, which is IPv4 only, while `localhost` resolves to ::1 first
+# wherever /etc/hosts lists it there. With nothing on ::1 the browser falls back
+# to IPv4 and the difference never shows, but a process holding the port on ::1
+# or :: answers instead - silently, with its own error page. The literal address
+# is always this stack. CORS_ALLOWED_ORIGINS covers both spellings.
+
 cat <<EOF
 
 Test stack is up.
 
-  Storefront   http://localhost:8080
-  Admin        http://localhost:8080/login
-  Swagger      http://localhost:5001/swagger
-  Health       http://localhost:5001/health
+  Storefront   http://127.0.0.1:$STOREFRONT_PORT
+  Admin        http://127.0.0.1:$STOREFRONT_PORT/login
+  Swagger      http://127.0.0.1:$API_PORT/swagger
+  Health       http://127.0.0.1:$API_PORT/health
 
   user  $admin_user
   pass  $admin_pass

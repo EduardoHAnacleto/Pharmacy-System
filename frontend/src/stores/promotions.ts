@@ -9,7 +9,9 @@ import type { PagedResult } from '@/types/pagedResult'
 export interface PromotionCreatePayload {
   name: string
   price: number
-  priceBefore: number
+
+  /** Optional: null creates an item sold at a single price, with no strikethrough. */
+  priceBefore: number | null
   image: File
 
   dateStart: string
@@ -20,6 +22,9 @@ export interface PromotionCreatePayload {
   categoryId: number
   productType: string
 
+  /** Whether the item may only be dispensed against a prescription. */
+  requiresPrescription: boolean
+
   // createdByUserId / createdByUserName are not sent: the API derives them from
   // the authenticated caller's token.
 }
@@ -27,12 +32,13 @@ export interface PromotionCreatePayload {
 export interface PromotionUpdatePayload {
   name: string
   price: number
-  priceBefore: number
+  priceBefore: number | null
   dateStart: string
   dateEnd: string
   publish: boolean
   categoryId: number
   productType: string
+  requiresPrescription: boolean
 }
 
 export interface ReactivatePayload {
@@ -127,7 +133,11 @@ export const usePromotionsStore = defineStore('promotions', {
 
       formData.append('name', payload.name)
       formData.append('price', payload.price.toString())
-      formData.append('priceBefore', payload.priceBefore.toString())
+      // Omitted rather than sent empty: multipart carries no null, and an empty
+      // string binds to 0 server-side, which fails the range check.
+      if (payload.priceBefore !== null) {
+        formData.append('priceBefore', payload.priceBefore.toString())
+      }
       formData.append('image', payload.image)
 
       formData.append('dateStart', payload.dateStart)
@@ -136,6 +146,7 @@ export const usePromotionsStore = defineStore('promotions', {
       formData.append('publish', String(payload.publish))
       formData.append('categoryId', payload.categoryId.toString())
       formData.append('productType', payload.productType)
+      formData.append('requiresPrescription', String(payload.requiresPrescription))
 
       try {
         const { data } = await api.post<ItemPromotion>('/item-promotions', formData, {

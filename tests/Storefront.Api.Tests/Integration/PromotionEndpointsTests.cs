@@ -21,25 +21,39 @@ public class PromotionEndpointsTests
         0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
     ];
 
+    /// <summary>
+    /// Builds the create form. <paramref name="priceBefore"/> is nullable and a
+    /// null leaves the field out of the request entirely, which is the shape a
+    /// client sends for an item that is not discounted.
+    /// </summary>
     private static MultipartFormDataContent BuildForm(
         byte[]? image = null,
         string name = "Teste",
         decimal price = 9.90m,
-        decimal priceBefore = 19.90m,
+        decimal? priceBefore = 19.90m,
         int categoryId = 1,
-        string? imageContentType = "image/png")
+        string? imageContentType = "image/png",
+        bool requiresPrescription = false)
     {
         var form = new MultipartFormDataContent
         {
             { new StringContent(name), "Name" },
             { new StringContent(price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)), "Price" },
-            { new StringContent(priceBefore.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)), "PriceBefore" },
             { new StringContent("2026-01-01T00:00:00Z"), "DateStart" },
             { new StringContent("2099-12-31T00:00:00Z"), "DateEnd" },
             { new StringContent("true"), "IsActive" },
             { new StringContent(categoryId.ToString(System.Globalization.CultureInfo.InvariantCulture)), "CategoryId" },
             { new StringContent("default"), "ProductType" },
+            { new StringContent(requiresPrescription ? "true" : "false"), "RequiresPrescription" },
         };
+
+        if (priceBefore.HasValue)
+        {
+            form.Add(
+                new StringContent(priceBefore.Value.ToString(
+                    "0.00", System.Globalization.CultureInfo.InvariantCulture)),
+                "PriceBefore");
+        }
 
         if (image != null)
         {
@@ -135,6 +149,80 @@ public class PromotionEndpointsTests
             BuildForm(ValidPng, price: 20m, priceBefore: 10m));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Create_WithoutAnOriginalPrice_Succeeds()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        // PriceBefore is optional in the schema, but as a non-nullable decimal an
+        // omitted field bound to 0 and then failed [Range(0.01, ...)] — so the
+        // field could never actually be left out, and the storefront's
+        // "not discounted" rendering was unreachable.
+        var response = await client.PostAsync(
+            "/api/v1/item-promotions",
+            BuildForm(ValidPng, name: "Sem preço anterior", priceBefore: null));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var created = await response.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+        Assert.Null(created!.PriceBefore);
+
+        // Null must survive the round trip: the grid keys its strikethrough off
+        // this field, so a 0 coming back would still hide the plain-price branch.
+        var fetched = await client.GetFromJsonAsync<ItemPromotionResponseDto>(
+            $"/api/v1/item-promotions/{created.Id}");
+
+        Assert.Null(fetched!.PriceBefore);
+        Assert.Equal(created.Price, fetched.Price);
+    }
+
+    [SkippableFact]
+    public async Task Create_RejectsAnOriginalPriceOfZero()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        // Optional does not mean "anything goes": a supplied value is still
+        // range-checked, so 0 stays a 400 rather than becoming a way to spell null.
+        var response = await client.PostAsync(
+            "/api/v1/item-promotions", BuildForm(ValidPng, priceBefore: 0m));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Update_CanClearTheOriginalPrice()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var created = await client.PostAsync(
+            "/api/v1/item-promotions", BuildForm(ValidPng, name: "Fim da promoção"));
+        var dto = await created.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+
+        // The update DTO shares the base class, so it carried the same defect:
+        // a promotion could never be edited back into a plain-price item.
+        var updated = await client.PutAsJsonAsync(
+            $"/api/v1/item-promotions/{dto!.Id}",
+            new
+            {
+                name = "Fim da promoção",
+                price = 9.90m,
+                priceBefore = (decimal?)null,
+                dateStart = "2026-01-01T00:00:00Z",
+                dateEnd = "2099-12-31T00:00:00Z",
+                publish = true,
+                categoryId = 1,
+                productType = "default",
+            });
+
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+
+        var result = await updated.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+        Assert.Null(result!.PriceBefore);
     }
 
     [SkippableFact]
@@ -382,6 +470,51 @@ public class PromotionEndpointsTests
             "/api/v1/item-promotions/active?filter.search=nada-com-esse-nome");
 
         Assert.Empty(missed!.Items);
+    }
+
+    // ===============================
+    // PRESCRIPTION
+    // ===============================
+
+    [SkippableFact]
+    public async Task Create_CarriesThePrescriptionFlag()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var response = await client.PostAsync(
+            "/api/v1/item-promotions",
+            BuildForm(ValidPng, name: $"Antibiotico{Guid.NewGuid():N}", requiresPrescription: true));
+
+        response.EnsureSuccessStatusCode();
+
+        var created = await response.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+        Assert.True(created!.RequiresPrescription);
+
+        // Through the database, not just echoed back from the request.
+        var fetched = await client.GetFromJsonAsync<ItemPromotionResponseDto>(
+            $"/api/v1/item-promotions/{created.Id}");
+
+        Assert.True(fetched!.RequiresPrescription);
+    }
+
+    [SkippableFact]
+    public async Task Create_DefaultsToNoPrescription()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        // The column carries a default of false so the migration cannot mark an
+        // existing shampoo as prescription-only, and a form that says nothing has
+        // to mean the same thing.
+        var response = await client.PostAsync(
+            "/api/v1/item-promotions",
+            BuildForm(ValidPng, name: $"Sabonete{Guid.NewGuid():N}"));
+
+        response.EnsureSuccessStatusCode();
+
+        var created = await response.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+        Assert.False(created!.RequiresPrescription);
     }
 
     [SkippableFact]

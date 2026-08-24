@@ -8,7 +8,12 @@ namespace Storefront.Api.Models
         public int Id { get; set; }
         public string Name { get; set; } = null!;
         public decimal Price { get; set; }
-        public decimal PriceBefore { get; set; }
+        /// <summary>
+        /// The original price, when there is one. Null means the item is simply
+        /// sold at <see cref="Price"/>, which the storefront renders without a
+        /// strikethrough.
+        /// </summary>
+        public decimal? PriceBefore { get; set; }
 
         /// <summary>
         /// Relative URL actually served for this promotion. Equal to the linked
@@ -20,6 +25,23 @@ namespace Storefront.Api.Models
 
         public DateTime DateStart { get; set; }
         public DateTime DateEnd { get; set; }
+
+        /// <summary>
+        /// Whether this item may only be dispensed against a prescription.
+        /// </summary>
+        /// <remarks>
+        /// The catalogue had no way to say it, so a shelf of antibiotics carried the
+        /// same "Adicionar" button as a bar of soap. This does not attempt to enforce
+        /// anything — the order still completes over WhatsApp, where a pharmacist
+        /// handles it — but it lets the storefront set the right expectation before a
+        /// customer builds a basket they cannot collect without a doctor.
+        /// <para>
+        /// Defaults to false so every existing row keeps its current meaning: the
+        /// migration must not silently mark a shampoo as prescription-only.
+        /// </para>
+        /// </remarks>
+        [Column("requires_prescription")]
+        public bool RequiresPrescription { get; set; }
 
         // ===== LIFECYCLE =====
 

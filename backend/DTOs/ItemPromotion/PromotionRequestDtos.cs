@@ -16,8 +16,12 @@ namespace Storefront.Api.DTOs.ItemPromotion
         [Range(0.01, 99_999_999.99)]
         public decimal Price { get; set; }
 
+        // Nullable because a promotion may simply have no "before" price: the
+        // storefront renders those as a single price with no strikethrough.
+        // As a non-nullable decimal an omitted field arrived as 0, failed the
+        // range check, and made the optional field impossible to leave out.
         [Range(0.01, 99_999_999.99)]
-        public decimal PriceBefore { get; set; }
+        public decimal? PriceBefore { get; set; }
 
         [Required]
         public DateTime DateStart { get; set; }
@@ -37,6 +41,18 @@ namespace Storefront.Api.DTOs.ItemPromotion
 
         [MaxLength(30)]
         public string ProductType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Whether the item may only be dispensed against a prescription.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to false, and an update that omits it clears it — the same
+        /// contract the rest of this DTO already has, since the admin form always
+        /// sends the complete object. Nothing here enforces the rule: the order
+        /// still leaves through WhatsApp, where a pharmacist handles it. What it
+        /// buys is telling the customer before they build a basket.
+        /// </remarks>
+        public bool RequiresPrescription { get; set; }
 
         // CreatedByUserId and CreatedByUserName are deliberately absent: they are
         // read from the authenticated caller's token. Accepting them from the

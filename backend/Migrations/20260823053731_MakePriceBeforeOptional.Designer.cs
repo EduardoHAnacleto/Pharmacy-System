@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Storefront.Api.Data;
 
@@ -11,9 +12,11 @@ using Storefront.Api.Data;
 namespace Storefront.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260823053731_MakePriceBeforeOptional")]
+    partial class MakePriceBeforeOptional
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -253,10 +256,6 @@ namespace Storefront.Api.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("varchar(30)")
                         .HasColumnName("product_type");
-
-                    b.Property<bool>("RequiresPrescription")
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("requires_prescription");
 
                     b.Property<int?>("SourcePromotionId")
                         .HasColumnType("int")
@@ -559,11 +558,6 @@ namespace Storefront.Api.Migrations
                         .HasColumnType("varchar(200)")
                         .HasColumnName("address");
 
-                    b.Property<string>("BusinessNumber")
-                        .HasMaxLength(40)
-                        .HasColumnType("varchar(40)")
-                        .HasColumnName("business_number");
-
                     b.Property<string>("City")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
@@ -681,16 +675,6 @@ namespace Storefront.Api.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)")
                         .HasColumnName("tagline");
-
-                    b.Property<string>("TechnicalManagerLicense")
-                        .HasMaxLength(60)
-                        .HasColumnType("varchar(60)")
-                        .HasColumnName("technical_manager_license");
-
-                    b.Property<string>("TechnicalManagerName")
-                        .HasMaxLength(120)
-                        .HasColumnType("varchar(120)")
-                        .HasColumnName("technical_manager_name");
 
                     b.Property<string>("TimeZone")
                         .IsRequired()

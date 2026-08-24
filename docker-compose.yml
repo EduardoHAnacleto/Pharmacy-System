@@ -41,6 +41,15 @@ services:
     # an empty volume, which made schema changes impossible after first boot.
     volumes:
       - db_data:/var/lib/mysql
+    # 127.0.0.1, never localhost: to a MySQL client `localhost` means the unix
+    # socket, and on an empty volume the entrypoint runs a temporary server that
+    # listens on that socket with TCP switched off - the log says `port: 0`. A
+    # socket ping answers there, so the container reports healthy several
+    # seconds before 3306 exists, compose releases the migrator on
+    # service_healthy, and the migration bundle dies against a refused
+    # connection: "Unable to connect to any of the specified MySQL hosts".
+    # Forcing TCP makes the check fail until the real server is listening, which
+    # is the condition the dependents actually need.
     healthcheck:
       test:
         [
@@ -48,7 +57,7 @@ services:
           "mysqladmin",
           "ping",
           "-h",
-          "localhost",
+          "127.0.0.1",
           "-uroot",
           "-p${MYSQL_ROOT_PASSWORD}",
         ]

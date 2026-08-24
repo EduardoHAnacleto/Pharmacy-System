@@ -60,6 +60,15 @@ namespace Storefront.Api.DTOs.Store
         public IReadOnlyDictionary<string, List<OpeningRangeDto>> OpeningHours { get; set; } =
             new Dictionary<string, List<OpeningRangeDto>>();
 
+        // ===== COMPLIANCE =====
+        // Public, like everything else here: these exist precisely in order to be
+        // printed on the page. CNPJ in Brazil, NZBN in New Zealand — the concept
+        // lives here, the acronym lives in the translations.
+
+        public string? BusinessNumber { get; set; }
+        public string? TechnicalManagerName { get; set; }
+        public string? TechnicalManagerLicense { get; set; }
+
         public string? FooterText { get; set; }
     }
 
@@ -182,6 +191,20 @@ namespace Storefront.Api.DTOs.Store
         public bool CollectPostalCode { get; set; }
 
         public Dictionary<string, List<OpeningRangeDto>> OpeningHours { get; set; } = [];
+
+        // ===== COMPLIANCE =====
+        // Free text rather than a validated CNPJ. The format differs by market —
+        // this same field holds an NZBN for a shop in New Zealand — and a shop
+        // that mistypes its own registration is not a problem this API can catch.
+
+        [MaxLength(40)]
+        public string? BusinessNumber { get; set; }
+
+        [MaxLength(120)]
+        public string? TechnicalManagerName { get; set; }
+
+        [MaxLength(60)]
+        public string? TechnicalManagerLicense { get; set; }
 
         [MaxLength(300)]
         public string? FooterText { get; set; }

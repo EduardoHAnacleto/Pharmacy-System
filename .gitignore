@@ -115,6 +115,16 @@ frontend/blob-report/
 frontend/.cache/playwright/
 
 ########################################
+# UPLOADED FILES
+########################################
+
+# Promotion artwork uploaded at runtime. In a deployment this path is a Docker
+# volume; on a developer's machine the integration suite writes real PNGs into
+# it, because it boots the API in-process and the upload path is relative to the
+# project. Test output, not source.
+backend/wwwroot/images/
+
+########################################
 # TEMP FILES
 ########################################
 

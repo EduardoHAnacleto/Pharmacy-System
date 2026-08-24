@@ -54,6 +54,19 @@ export interface StoreSettings {
   collectPostalCode: boolean
 
   openingHours: OpeningHours
+
+  /**
+   * Who is legally behind the shop, and who is answerable for what it dispenses.
+   *
+   * Named for the concept rather than the market: businessNumber holds a CNPJ in
+   * Brazil and an NZBN in New Zealand, and the labels that spell those out live
+   * in the translations. All three are optional — a shop that has not filled
+   * them in simply renders no compliance block.
+   */
+  businessNumber: string | null
+  technicalManagerName: string | null
+  technicalManagerLicense: string | null
+
   footerText: string | null
 }
 
@@ -105,5 +118,10 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   collectPostalCode: true,
 
   openingHours: {},
+
+  businessNumber: null,
+  technicalManagerName: null,
+  technicalManagerLicense: null,
+
   footerText: null,
 }

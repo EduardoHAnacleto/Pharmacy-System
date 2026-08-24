@@ -121,6 +121,25 @@
             <label class="form-check-label" for="promotion-publish">{{ t('admin.publish') }}</label>
           </div>
 
+          <!--
+            Marks the item as prescription-only. Nothing enforces it — the order
+            still leaves through WhatsApp, where a pharmacist handles it — but
+            the storefront then says so on the card and again in the basket,
+            instead of putting the same "Adicionar" button on an antibiotic and
+            a bar of soap.
+          -->
+          <div class="form-check my-2">
+            <input
+              id="promotion-prescription"
+              class="form-check-input"
+              type="checkbox"
+              v-model="form.requiresPrescription"
+            />
+            <label class="form-check-label" for="promotion-prescription">
+              {{ t('admin.requiresPrescription') }}
+            </label>
+          </div>
+
           <div class="d-flex gap-2 mt-2">
             <button class="btn btn-success" @click="submit">
               {{ t('admin.savePromotion') }}
@@ -148,7 +167,27 @@
       <!-- LIST -->
       <div class="card mb-4">
         <div class="card-body">
-          <h5 class="mb-3">{{ t('admin.registered') }}</h5>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <h5 class="m-0">{{ t('admin.registered') }}</h5>
+
+            <!-- BROADCAST -->
+            <!--
+              The countdown the storefront already computes, asked from the other
+              side of the counter: what is worth telling customers today. It
+              opens WhatsApp with the message written and no recipient, so the
+              shopkeeper chooses the contact, group or list themselves.
+            -->
+            <a
+              v-if="endingSoon.length > 0"
+              class="btn btn-sm btn-success ms-auto"
+              :href="broadcastHref"
+              target="_blank"
+              rel="noopener"
+            >
+              <i class="bi bi-whatsapp me-1" aria-hidden="true"></i>
+              {{ t('admin.broadcastEndingSoon', { count: endingSoon.length }) }}
+            </a>
+          </div>
 
           <div class="table-responsive">
             <table class="table table-striped align-middle">
@@ -372,6 +411,9 @@ import {
   type Category,
 } from '@/services/itemPromotionService'
 import { formatDate, formatMoney } from '@/utils/format'
+import { discountOf } from '@/utils/promotionPricing'
+import { broadcastLink, endingSoonForBroadcast } from '@/utils/promotionBroadcast'
+import { useSettingsStore } from '@/stores/settings'
 import { STATUS_BADGE_CLASS, STATUS_LABELS, type ItemPromotion } from '@/types/itemPromotion'
 
 /* ======================
@@ -381,6 +423,7 @@ const { t } = useI18n()
 const router = useRouter()
 const promotionsStore = usePromotionsStore()
 const authStore = useAuthStore()
+const settings = useSettingsStore()
 
 /* ======================
    FORM STATE
@@ -392,6 +435,7 @@ const form = reactive({
   dateStart: '',
   dateEnd: '',
   publish: true,
+  requiresPrescription: false,
   categoryId: null as number | null,
 })
 
@@ -411,6 +455,52 @@ const categories = ref<Category[]>([])
 const promotions = computed(() => promotionsStore.promotions)
 const archived = computed(() => promotionsStore.archived)
 const missingImageCount = computed(() => promotionsStore.missingImageCount)
+
+/* ======================
+   BROADCAST
+
+   The same final-week window the storefront marks on a card, asked from behind
+   the counter: what is worth sending to customers today. Selection lives in
+   utils with its own tests; the wording is assembled here, where the shop's
+   locale and the translations are.
+====================== */
+const endingSoon = computed(() => endingSoonForBroadcast(promotions.value))
+
+const broadcastHref = computed(() => {
+  const lines = endingSoon.value.map(({ promotion, daysLeft }) => {
+    const price = formatMoney(promotion.price)
+    const discount = discountOf(promotion.price, promotion.priceBefore)
+
+    const priceText = discount
+      ? t('admin.broadcastLineDiscounted', {
+          was: formatMoney(promotion.priceBefore as number),
+          now: price,
+          percent: discount.percent,
+        })
+      : price
+
+    return t('admin.broadcastLine', {
+      name: promotion.name,
+      price: priceText,
+      deadline: broadcastDeadline(daysLeft),
+    })
+  })
+
+  const message = [
+    t('admin.broadcastHeading', { store: settings.settings.storeName }),
+    '',
+    ...lines,
+  ].join('\n')
+
+  return broadcastLink(message)
+})
+
+function broadcastDeadline(days: number): string {
+  if (days === 0) return t('product.endingToday').toLocaleLowerCase(settings.settings.locale)
+  if (days === 1) return t('product.endingTomorrow').toLocaleLowerCase(settings.settings.locale)
+
+  return t('product.daysLeft', { count: days }).toLocaleLowerCase(settings.settings.locale)
+}
 const requestError = computed(() => promotionsStore.error)
 
 /* ======================
@@ -442,11 +532,36 @@ function handleImageUpload(event: Event) {
 /* ======================
    VALIDATION
 ====================== */
+/**
+ * The original price, or null when the field is left blank.
+ *
+ * Blanking a number input under `v-model.number` yields '' rather than null,
+ * so both spellings of "not given" collapse to null here. Absent is a
+ * legitimate answer: the item is then sold at `price` alone.
+ */
+const priceBefore = computed<number | null>(() =>
+  typeof form.priceBefore === 'number' && Number.isFinite(form.priceBefore)
+    ? form.priceBefore
+    : null,
+)
+
+/**
+ * The price, or null when the box is empty.
+ *
+ * The same trap priceBefore above was written for: clearing a `v-model.number`
+ * input leaves '', not null, so a bare `form.price === null` let an empty price
+ * through. The comparison below then coerced `'' < 10` to `0 < 10` and reported
+ * the form as valid, so submit fired and the server rejected `price=` — a
+ * request error where the form should simply have said what was missing.
+ */
+const price = computed<number | null>(() =>
+  typeof form.price === 'number' && Number.isFinite(form.price) ? form.price : null,
+)
+
 const isFormValid = computed(() => {
   if (
     !form.name ||
-    form.price === null ||
-    form.priceBefore === null ||
+    price.value === null ||
     form.categoryId === null ||
     !form.dateStart ||
     !form.dateEnd
@@ -458,7 +573,8 @@ const isFormValid = computed(() => {
   // existing media asset alone.
   if (!editingId.value && !imageFile.value) return false
 
-  return form.price < form.priceBefore
+  // Only a supplied original price has to be a real discount.
+  return priceBefore.value === null || price.value < priceBefore.value
 })
 
 /* ======================
@@ -483,13 +599,14 @@ async function create() {
   const payload: PromotionCreatePayload = {
     name: form.name,
     price: form.price!,
-    priceBefore: form.priceBefore!,
+    priceBefore: priceBefore.value,
     image: imageFile.value!,
     dateStart: form.dateStart,
     dateEnd: form.dateEnd,
     publish: form.publish,
     categoryId: form.categoryId!,
     productType: 'default',
+    requiresPrescription: form.requiresPrescription,
   }
 
   return promotionsStore.addPromotion(payload)
@@ -499,12 +616,13 @@ async function saveEdit(id: number) {
   const payload: PromotionUpdatePayload = {
     name: form.name,
     price: form.price!,
-    priceBefore: form.priceBefore!,
+    priceBefore: priceBefore.value,
     dateStart: new Date(form.dateStart).toISOString(),
     dateEnd: new Date(form.dateEnd).toISOString(),
     publish: form.publish,
     categoryId: form.categoryId!,
     productType: 'default',
+    requiresPrescription: form.requiresPrescription,
   }
 
   return promotionsStore.updatePromotion(id, payload)
@@ -526,6 +644,7 @@ function startEdit(promotion: ItemPromotion) {
   form.dateEnd = dateInputValue(promotion.dateEnd)
   form.publish = promotion.status !== 'Draft'
   form.categoryId = promotion.categoryId ?? null
+  form.requiresPrescription = promotion.requiresPrescription
 
   imageFile.value = null
   imagePreview.value = promotion.imageMissing ? undefined : promotion.imageUrl
@@ -672,6 +791,9 @@ function resetForm() {
   form.dateEnd = ''
   form.publish = true
   form.categoryId = null
+  // Back to false, never carried over: a new promotion inheriting the last
+  // one's prescription flag is how a shampoo ends up marked prescription-only.
+  form.requiresPrescription = false
 
   imageFile.value = null
   imagePreview.value = undefined

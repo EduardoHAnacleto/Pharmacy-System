@@ -15,6 +15,8 @@ export default {
   nav: {
     home: 'Principal',
     cart: 'Carrinho de Compras',
+    cartCountOne: '1 item no carrinho',
+    cartCount: '{count} itens no carrinho',
     contact: 'Contato',
     login: 'Login',
     admin: 'Administração',
@@ -25,13 +27,43 @@ export default {
   home: {
     loading: 'Carregando produtos...',
     loadingMore: 'Carregando mais...',
+
+    // A primeira tela. As promessas são montadas a partir de store_settings,
+    // então uma loja que não entrega nunca promete entrega.
+    heroTitle: 'Promoções da semana',
+    heroSubtitle: 'Peça pelo WhatsApp e retire hoje, ou receba em casa.',
+    promisesLabel: 'O que esta loja oferece',
+    promisePickup: 'Retirada no local',
+    promiseDelivery: 'Entrega em casa',
+    promiseDeliveryCity: 'Entrega em {city}',
+    promiseDeliveryCities: 'Entrega em {count} cidades',
+    promiseFreeDelivery: 'Entrega grátis',
+    promiseMinOrder: 'Pedido mínimo {amount}',
+
+    // Contagem de resultados. O total vem da API; o "terminam esta semana" só
+    // aparece quando a lista inteira já foi carregada e pode ser contada.
+    countOne: '1 promoção',
+    count: '{count} promoções',
+    countEndingSoonOne: '1 termina esta semana',
+    countEndingSoon: '{count} terminam esta semana',
   },
 
   product: {
     empty: 'Nenhum produto disponível',
     add: 'Adicionar',
     imageAlt: 'Imagem de {name}',
-    validity: 'Promoção válida de {from} até {to}',
+
+    // Só a data final. A de início não decide nada para quem está olhando:
+    // a promoção está no ar, e o que importa é até quando.
+    validity: 'Válida até {to}',
+    saved: 'economize {amount}',
+    requiresPrescription: 'Requer receita',
+
+    // Countdown carried by a promotion in its final week. daysLeft is only ever
+    // reached with two days or more, so it needs no singular form.
+    endingToday: 'Último dia',
+    endingTomorrow: 'Termina amanhã',
+    daysLeft: 'Faltam {count} dias',
   },
 
   filters: {
@@ -42,6 +74,7 @@ export default {
     minPrice: 'Preço mín.',
     maxPrice: 'Preço máx.',
     sort: 'Ordenar',
+    more: 'Mais filtros',
     clear: 'Limpar',
     noResults: 'Nenhuma promoção encontrada com esses filtros.',
     sortOption: {
@@ -67,6 +100,17 @@ export default {
     continue: 'Continuar',
     increase: 'Aumentar quantidade',
     decrease: 'Diminuir quantidade',
+    prescriptionNotice:
+      'Há itens que exigem receita. Tenha a receita em mãos na retirada ou na entrega.',
+  },
+
+  // O modelo nomeia estes campos de forma genérica — businessNumber guarda um
+  // CNPJ aqui e um NZBN na Nova Zelândia. É aqui, na tradução, que o termo do
+  // mercado aparece.
+  footer: {
+    businessNumber: 'CNPJ {value}',
+    technicalManager: 'Farmacêutico(a) responsável: {name}',
+    technicalManagerLicensed: 'Farmacêutico(a) responsável: {name} — {license}',
   },
 
   checkout: {
@@ -199,6 +243,9 @@ export default {
     collectPostalCode: 'Pedir CEP no checkout',
     openingHours: 'Horário de funcionamento',
     addRange: 'Adicionar horário',
+    businessNumber: 'CNPJ',
+    technicalManagerName: 'Farmacêutico(a) responsável',
+    technicalManagerLicense: 'CRF',
     footerText: 'Texto do rodapé',
     saved: 'Configurações salvas.',
     saveFailed: 'Não foi possível salvar as configurações.',
@@ -214,9 +261,18 @@ export default {
     dateEnd: 'Fim',
     image: 'Imagem',
     publish: 'Publicada',
+    requiresPrescription: 'Requer receita',
     savePromotion: 'Salvar promoção',
     formInvalid: 'Preencha todos os campos corretamente. O preço deve ser menor que o preço antes.',
     registered: 'Promoções Cadastradas',
+
+    // Divulgação. A mensagem é montada com estas linhas e aberta no WhatsApp
+    // sem destinatário, para o lojista escolher o contato, grupo ou lista.
+    broadcastEndingSoon: 'Divulgar {count} que terminam',
+    broadcastHeading: 'Promoções terminando em {store}:',
+    broadcastLine: '• {name} — {price} ({deadline})',
+    broadcastLineDiscounted: 'de {was} por {now}, −{percent}%',
+
     validity: 'Vigência',
     status: 'Status',
     edit: 'Editar',

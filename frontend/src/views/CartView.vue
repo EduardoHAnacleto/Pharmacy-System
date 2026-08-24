@@ -73,6 +73,19 @@
         <div class="card shadow-sm p-3">
           <h5 class="mb-3">{{ t('cart.summary') }}</h5>
 
+          <!-- PRESCRIPTION -->
+          <!--
+            Said once, here, rather than repeated on every line that needs it.
+            The customer needs to know to bring the paper; hearing it four times
+            does not make it four times truer. Above the fulfilment choice
+            because it bears on that choice — collection is the option that works
+            when a prescription has to change hands.
+          -->
+          <div v-if="cart.hasPrescriptionItems" class="alert alert-warning py-2 px-3 small mb-3">
+            <i class="bi bi-clipboard2-pulse me-1" aria-hidden="true"></i>
+            {{ t('cart.prescriptionNotice') }}
+          </div>
+
           <!-- FULFILMENT -->
           <div class="mb-3">
             <label class="form-label fw-semibold" for="fulfillment">

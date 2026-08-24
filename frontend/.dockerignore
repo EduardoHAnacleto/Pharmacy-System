@@ -1,0 +1,28 @@
+# Keeps the host's install out of the image.
+#
+# The Dockerfile copies package*.json, runs `npm ci` on node:20-alpine, and only
+# then does `COPY . .`. Without this file that copy lands the host's
+# node_modules on top of the one the image just built, and the platform-specific
+# binaries inside it - esbuild above all - are then the wrong ones: a Windows or
+# macOS build of a package the Linux container is about to execute. The vite
+# build fails, and the message names the binary rather than the cause.
+#
+# It also keeps the context small. A local install is a few hundred megabytes
+# that would otherwise be uploaded to the daemon on every build.
+node_modules
+
+# Rebuilt inside the image; a stale local copy would be shadowed anyway.
+dist
+
+# Test and tooling output, never part of a release image.
+coverage
+playwright-report
+test-results
+e2e
+.husky
+.vscode
+
+# Secrets and local overrides have no business in an image layer.
+.env
+.env.*
+*.local

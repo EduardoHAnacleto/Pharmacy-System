@@ -1,8 +1,10 @@
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -17,6 +19,35 @@ using Storefront.Api.Hubs;
 using Storefront.Api.Infrastructure;
 using Storefront.Api.Options;
 using Storefront.Api.Services;
+
+// ===============================
+// CULTURE
+// ===============================
+// This API speaks one culture: invariant.
+//
+// ASP.NET binds query-string values with the invariant culture but form values
+// with CultureInfo.CurrentCulture. That asymmetry is a live hazard for an
+// application whose prices arrive as multipart form fields: on a host whose
+// culture writes decimals with a comma - pt-BR, de-DE, fr-FR - the "3.00" the
+// admin form submits binds as 300. Nothing reports an error. The number is
+// simply a hundred times too large, and it is a price.
+//
+// The image that ships this API sets neither LANG nor LC_ALL, so .NET on Linux
+// falls back to the invariant culture and the deployed stack has always been
+// correct - by accident rather than by decision. A LANG in compose, or a base
+// image that sets one, would flip it silently. Everything else here already
+// passes CultureInfo.InvariantCulture explicitly - CSV export, cache keys,
+// password hashes, JWT claims - so this only makes the model binder agree with
+// the intent the rest of the code already states.
+//
+// Two settings doing two different jobs. This pair is the process default,
+// covering startup, the seeder and any background work. UseRequestLocalization
+// in the pipeline below pins each request as well, because a default yields to
+// any thread that carries a culture of its own: Kestrel never sets one, but a
+// host that does would slip past this line alone. FormCultureTests pins one
+// deliberately, which is how it can prove the middleware and not just this.
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -327,6 +358,18 @@ var app = builder.Build();
 app.UseExceptionHandler();
 
 app.UseSerilogRequestLogging();
+
+// Before routing, so model binding runs under it. The providers are cleared on
+// purpose: without that, Accept-Language would let a client decide how this
+// server parses a decimal, which is the same defect one rung further out. See
+// the note at the top of this file.
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(CultureInfo.InvariantCulture),
+    SupportedCultures = [CultureInfo.InvariantCulture],
+    SupportedUICultures = [CultureInfo.InvariantCulture],
+    RequestCultureProviders = [],
+});
 
 app.UseRouting();
 app.UseCors("FrontendPolicy");

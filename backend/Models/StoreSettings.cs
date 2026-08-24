@@ -121,6 +121,37 @@ namespace Storefront.Api.Models
         [Column("collect_postal_code")]
         public bool CollectPostalCode { get; set; } = true;
 
+        // ===== COMPLIANCE =====
+
+        /// <remarks>
+        /// These three are what a customer looks for before sending money to a shop
+        /// they have not used: who is legally behind it, and who is answerable for
+        /// what it dispenses. A Brazilian pharmacy must publish them; the footer had
+        /// none of the three.
+        /// <para>
+        /// Named for the concept rather than the country, like <see cref="CountryCode"/>
+        /// and <see cref="Currency"/>. The obligation is not Brazilian — only the
+        /// acronyms are — and the labels that say CNPJ and CRF live in the
+        /// translations, where they can differ per market.
+        /// </para>
+        /// </remarks>
+
+        /// <summary>Company registration: CNPJ in Brazil, NZBN in New Zealand.</summary>
+        [Column("business_number")]
+        public string? BusinessNumber { get; set; }
+
+        /// <summary>
+        /// The professional legally answerable for what the shop dispenses — the
+        /// <i>farmacêutico responsável</i> of a Brazilian pharmacy. The field does not
+        /// name the profession: other regulated trades carry the same duty.
+        /// </summary>
+        [Column("technical_manager_name")]
+        public string? TechnicalManagerName { get; set; }
+
+        /// <summary>Their professional registration, e.g. <c>CRF-SP 12345</c>.</summary>
+        [Column("technical_manager_license")]
+        public string? TechnicalManagerLicense { get; set; }
+
         // ===== OPERATION =====
 
         /// <summary>

@@ -15,6 +15,8 @@ export default {
   nav: {
     home: 'Home',
     cart: 'Cart',
+    cartCountOne: '1 item in cart',
+    cartCount: '{count} items in cart',
     contact: 'Contact',
     login: 'Log in',
     admin: 'Admin',
@@ -25,13 +27,43 @@ export default {
   home: {
     loading: 'Loading products...',
     loadingMore: 'Loading more...',
+
+    // The first screen. The promises are assembled from store_settings, so a
+    // shop that does not deliver never claims to.
+    heroTitle: 'This week’s offers',
+    heroSubtitle: 'Order on WhatsApp and collect today, or have it delivered.',
+    promisesLabel: 'What this shop offers',
+    promisePickup: 'Collect in store',
+    promiseDelivery: 'Home delivery',
+    promiseDeliveryCity: 'Delivery in {city}',
+    promiseDeliveryCities: 'Delivery to {count} towns',
+    promiseFreeDelivery: 'Free delivery',
+    promiseMinOrder: 'Minimum order {amount}',
+
+    // Result count. The total comes from the API; "ending this week" only
+    // appears once the whole list is loaded and can honestly be counted.
+    countOne: '1 offer',
+    count: '{count} offers',
+    countEndingSoonOne: '1 ends this week',
+    countEndingSoon: '{count} end this week',
   },
 
   product: {
     empty: 'No products available',
     add: 'Add',
     imageAlt: 'Photo of {name}',
-    validity: 'Offer valid from {from} to {to}',
+
+    // The end date only. The start decides nothing for someone looking at it:
+    // the offer is live, and what matters is how long it stays that way.
+    validity: 'Valid until {to}',
+    saved: 'save {amount}',
+    requiresPrescription: 'Prescription required',
+
+    // Countdown carried by a promotion in its final week. daysLeft is only ever
+    // reached with two days or more, so it needs no singular form.
+    endingToday: 'Last day',
+    endingTomorrow: 'Ends tomorrow',
+    daysLeft: '{count} days left',
   },
 
   filters: {
@@ -42,6 +74,7 @@ export default {
     minPrice: 'Min price',
     maxPrice: 'Max price',
     sort: 'Sort',
+    more: 'More filters',
     clear: 'Clear',
     noResults: 'No offers match those filters.',
     sortOption: {
@@ -67,6 +100,16 @@ export default {
     continue: 'Continue',
     increase: 'Increase quantity',
     decrease: 'Decrease quantity',
+    prescriptionNotice:
+      'Some items need a prescription. Have it with you at collection or delivery.',
+  },
+
+  // The model names these generically — businessNumber holds a CNPJ in Brazil
+  // and an NZBN here. The market's own term belongs in the translation.
+  footer: {
+    businessNumber: 'NZBN {value}',
+    technicalManager: 'Responsible pharmacist: {name}',
+    technicalManagerLicensed: 'Responsible pharmacist: {name} — {license}',
   },
 
   checkout: {
@@ -198,6 +241,9 @@ export default {
     collectPostalCode: 'Ask for a postcode at checkout',
     openingHours: 'Opening hours',
     addRange: 'Add hours',
+    businessNumber: 'Company number',
+    technicalManagerName: 'Responsible pharmacist',
+    technicalManagerLicense: 'Registration number',
     footerText: 'Footer text',
     saved: 'Settings saved.',
     saveFailed: 'Could not save the settings.',
@@ -213,9 +259,18 @@ export default {
     dateEnd: 'Ends',
     image: 'Image',
     publish: 'Published',
+    requiresPrescription: 'Prescription required',
     savePromotion: 'Save offer',
     formInvalid: 'Fill every field correctly. The price must be lower than the price before.',
     registered: 'Offers',
+
+    // Broadcast. The message is assembled from these lines and opened in
+    // WhatsApp with no recipient, so the shopkeeper picks who receives it.
+    broadcastEndingSoon: 'Share {count} ending soon',
+    broadcastHeading: 'Offers ending at {store}:',
+    broadcastLine: '• {name} — {price} ({deadline})',
+    broadcastLineDiscounted: 'was {was}, now {now}, −{percent}%',
+
     validity: 'Validity',
     status: 'Status',
     edit: 'Edit',

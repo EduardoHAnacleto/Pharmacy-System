@@ -192,6 +192,11 @@ namespace Storefront.Api.Services
             settings.CollectPostalCode = request.CollectPostalCode;
 
             settings.OpeningHours = SerializeHours(request.OpeningHours);
+
+            settings.BusinessNumber = Clean(request.BusinessNumber);
+            settings.TechnicalManagerName = Clean(request.TechnicalManagerName);
+            settings.TechnicalManagerLicense = Clean(request.TechnicalManagerLicense);
+
             settings.FooterText = Clean(request.FooterText);
             settings.UpdatedAt = DateTime.UtcNow;
 
@@ -304,6 +309,11 @@ namespace Storefront.Api.Services
             CollectTaxId = s.CollectTaxId,
             CollectPostalCode = s.CollectPostalCode,
             OpeningHours = DeserializeHours(s.OpeningHours),
+
+            BusinessNumber = s.BusinessNumber,
+            TechnicalManagerName = s.TechnicalManagerName,
+            TechnicalManagerLicense = s.TechnicalManagerLicense,
+
             FooterText = s.FooterText,
         };
 

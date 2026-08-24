@@ -54,6 +54,11 @@ configurável para qualquer loja. Implementado em fases; ver
 - CPF tinha **duas implementações com algoritmos diferentes**; sobrou a do store.
 - `/contact` versus `/Contact`: o link do menu não resolvia.
 - `PUT /item-promotions/{id}` passou a existir — o front já o chamava.
+- **`PriceBefore` voltou a ser de fato opcional.** O campo é opcional no schema,
+  mas era um `decimal` não anulável com `[Range(0.01, ...)]`: omiti-lo o fazia
+  chegar como `0`, reprovado pelo range, e o `POST` respondia 400. Não havia como
+  cadastrar um item sem preço anterior — e por isso o ramo `v-else` do
+  `ProductGrid`, que mostra preço único sem tachado, era código morto.
 - `try/catch` no `JSON.parse` do carrinho: um `localStorage` truncado derrubava a
   aplicação na montagem.
 - Feedback visível de erro nas ações do admin, que usavam `try/finally` sem `catch`.

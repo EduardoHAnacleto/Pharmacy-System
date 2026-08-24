@@ -31,6 +31,7 @@ namespace Storefront.Api.Mapping
 
                 DateStart = p.DateStart,
                 DateEnd = p.DateEnd,
+                RequiresPrescription = p.RequiresPrescription,
 
                 Status = p.Status,
                 ArchivedAt = p.ArchivedAt,

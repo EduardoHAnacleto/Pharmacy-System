@@ -61,3 +61,183 @@ body {
 a {
   color: var(--brand-primary);
 }
+
+/*
+ * ENDING SOON
+ *
+ * A promotion in its final week gets a countdown badge, a coloured edge and a
+ * coloured validity line. Three signals for one fact on purpose: colour is never
+ * the only carrier, so the card still reads as urgent to someone who cannot
+ * separate red from grey, and the badge spells the deadline out in words.
+ *
+ * Deliberately not --brand-primary. Urgency has to read as urgency whatever
+ * colour a shop picked for itself, and a countdown drawn in the brand colour
+ * looks like decoration. This red is dark enough to clear 4.5:1 against white
+ * text, which Bootstrap's own #dc3545 does not.
+ *
+ * .card.promo-ending, not .promo-ending: main.css is imported before Bootstrap,
+ * so a single class would tie with .card on specificity and lose to whichever
+ * loads later. Two classes win it outright, without reaching for !important.
+ */
+:root {
+  --promo-ending: #b02a37;
+}
+
+.card.promo-ending {
+  border: 2px solid var(--promo-ending);
+  box-shadow: 0 0.5rem 1rem rgba(176, 42, 55, 0.15);
+}
+
+.promo-ending__badge {
+  /* .card is position: relative in Bootstrap, so this anchors to the card. */
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+
+  border-radius: 50rem;
+  background-color: var(--promo-ending);
+  color: #fff;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+
+  /* The badge sits on an uploaded photo of unknown brightness. */
+  box-shadow: 0 0.125rem 0.35rem rgba(0, 0, 0, 0.3);
+}
+
+.promo-ending__badge--critical {
+  animation: promo-ending-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes promo-ending-pulse {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-ending__badge--critical {
+    animation: none;
+  }
+}
+
+/*
+ * Replaces .text-muted rather than layering over it: Bootstrap sets that colour
+ * with !important, so both cannot apply and the muted grey would win.
+ */
+.promo-ending__validity {
+  color: var(--promo-ending);
+  font-weight: 600;
+}
+
+/*
+ * HOW MUCH OFF
+ *
+ * Neither of these takes the shop's configured colours, and both are fixed
+ * rather than themable. The saving is money the customer keeps, so it is green
+ * wherever it appears; the badge is near-black because red is already spoken for
+ * by the countdown, and a card can carry both at once. A discount badge in the
+ * same red as an expiry warning makes the two read as one alarm.
+ *
+ * Near-black also survives any brand palette. --brand-primary is whatever a shop
+ * typed in and can be pale enough to vanish against a white card.
+ */
+:root {
+  --promo-discount: #1f2933;
+  --promo-saved: #0e6b45;
+}
+
+.promo-discount {
+  /* Opposite corner from .promo-ending__badge, which sits top-left. */
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+
+  padding: 0.32rem 0.55rem;
+  border-radius: 4px;
+  background-color: var(--promo-discount);
+  color: #fff;
+
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+
+  box-shadow: 0 0.125rem 0.35rem rgba(0, 0, 0, 0.3);
+}
+
+.promo-saved {
+  margin-top: 0.15rem;
+  color: var(--promo-saved);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/*
+ * PRODUCT NAME
+ *
+ * h5 is 20px, and a pharmacy product name is long — "Dipirona Monoidratada
+ * 500mg - 20 comprimidos" wrapped to four lines in a 163px column and made the
+ * name, on its own, the tallest thing on the card.
+ *
+ * Smaller rather than truncated. The distinguishing part of these names is the
+ * dosage and the count, which is where an ellipsis lands: 500mg and 750mg are
+ * different medicines, and a card that hides which one it is has failed at the
+ * only job it has.
+ */
+.promo-name {
+  font-size: 0.98rem;
+  line-height: 1.25;
+  margin-bottom: 0.4rem;
+}
+
+/*
+ * PRESCRIPTION
+ *
+ * Amber, not red: this is a condition of sale, not an error and not the expiry
+ * warning. Reusing the countdown's red would make a routine antibiotic look
+ * like an emergency, and put two different meanings on one colour.
+ *
+ * The icon is decorative — the words carry it — so it is aria-hidden in the
+ * markup and the pill reads as text to a screen reader.
+ */
+:root {
+  --promo-rx: #8a5a00;
+  --promo-rx-wash: #fdf3dd;
+}
+
+.promo-rx {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.45rem;
+  padding: 0.22rem 0.5rem;
+  border-radius: 50rem;
+  background: var(--promo-rx-wash);
+  color: var(--promo-rx);
+  font-size: 0.73rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/*
+ * RESULT COUNT
+ */
+.results-count {
+  font-size: 0.92rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.results-count__urgent {
+  color: var(--promo-ending);
+  font-weight: 600;
+}
