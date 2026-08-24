@@ -40,11 +40,12 @@
               {{ t('nav.contact') }}
             </RouterLink>
           </li>
-          <li class="nav-item">
-            <RouterLink to="/login" class="nav-link" active-class="active">
-              {{ t('nav.login') }}
-            </RouterLink>
-          </li>
+          <!--
+            No admin sign-in here. Four items in a customer's menu and one of
+            them opened the shop's back office — a slot spent on the one person
+            who already knows the address, and an invitation to everyone else to
+            try it. It moved to the footer; the route is unchanged.
+          -->
         </ul>
       </div>
     </div>

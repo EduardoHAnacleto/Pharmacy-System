@@ -33,10 +33,18 @@
         </a>
       </div>
 
-      <!-- PRIVACY -->
-      <p class="m-0 mt-3 small">
+      <!-- PRIVACY, AND THE WAY IN FOR THE SHOPKEEPER -->
+      <!--
+        Admin sign-in lives here rather than in the navigation bar: the one
+        person who needs it knows where the shop is, and a customer's menu has
+        better uses for a slot.
+      -->
+      <p class="m-0 mt-3 small d-flex justify-content-center gap-3">
         <RouterLink to="/privacy" class="text-white-50">
           {{ t('privacy.link') }}
+        </RouterLink>
+        <RouterLink to="/login" class="text-white-50">
+          {{ t('nav.login') }}
         </RouterLink>
       </p>
     </div>

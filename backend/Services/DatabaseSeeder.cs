@@ -104,7 +104,10 @@ namespace Storefront.Api.Services
 
             // No built-in default: a shop's logo is its own. The existing pharmacy's
             // artwork ships in the frontend's public directory, so setting this to
-            // /logoFarma.png restores exactly what it had.
+            // /logoFarma.jpg restores exactly what it had. The same artwork is also
+            // still there as .png for shops whose settings already name it, but the
+            // banner is a textured gradient — 378 kB as PNG against 26 kB as JPEG,
+            // for a file nobody can tell apart on screen.
             var logoUrl = configuration["Store:LogoUrl"];
             if (!string.IsNullOrWhiteSpace(logoUrl))
                 settings.LogoUrl = logoUrl;

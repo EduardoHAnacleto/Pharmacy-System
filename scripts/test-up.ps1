@@ -244,7 +244,7 @@ if (-not (Test-Path -LiteralPath $envFile)) {
         'STORE_LOCALE=pt-BR',
         'STORE_COUNTRY_CODE=BR',
         'STORE_TIME_ZONE=America/Sao_Paulo',
-        'STORE_LOGO_URL=/logoFarma.png',
+        'STORE_LOGO_URL=/logoFarma.jpg',
         'STORE_WHATSAPP_NUMBER=',
         '',
         'ANALYTICS_RAW_RETENTION_DAYS=90',
