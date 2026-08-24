@@ -228,6 +228,14 @@ namespace Storefront.Api.Data
                 entity.Property(e => e.DeliveryFee).HasPrecision(10, 2);
                 entity.Property(e => e.MinDeliveryTotal).HasPrecision(10, 2);
                 entity.Property(e => e.DeliveryCities).HasMaxLength(500);
+
+                // Same widths the update DTO validates against, so the column is
+                // a real floor rather than the DTO being the only thing standing
+                // between an operator and an unbounded write.
+                entity.Property(e => e.BusinessNumber).HasMaxLength(40);
+                entity.Property(e => e.TechnicalManagerName).HasMaxLength(120);
+                entity.Property(e => e.TechnicalManagerLicense).HasMaxLength(60);
+
                 entity.Property(e => e.FooterText).HasMaxLength(300);
 
                 // Opening hours are a small JSON document read whole and never

@@ -13,21 +13,24 @@ namespace Storefront.Api.Migrations
             migrationBuilder.AddColumn<string>(
                 name: "business_number",
                 table: "store_settings",
-                type: "longtext",
+                type: "varchar(40)",
+                maxLength: 40,
                 nullable: true)
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.AddColumn<string>(
                 name: "technical_manager_license",
                 table: "store_settings",
-                type: "longtext",
+                type: "varchar(60)",
+                maxLength: 60,
                 nullable: true)
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.AddColumn<string>(
                 name: "technical_manager_name",
                 table: "store_settings",
-                type: "longtext",
+                type: "varchar(120)",
+                maxLength: 120,
                 nullable: true)
                 .Annotation("MySql:CharSet", "utf8mb4");
 

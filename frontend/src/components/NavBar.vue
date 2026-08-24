@@ -38,11 +38,7 @@
                 the WhatsApp one, both covering the grid. Here it is attached to
                 the word it counts, and the corner is free.
               -->
-              <span
-                v-if="itemsCount > 0"
-                class="cart-count"
-                :aria-label="t('nav.cartCount', { count: itemsCount })"
-              >
+              <span v-if="itemsCount > 0" class="cart-count" :aria-label="cartCountLabel">
                 {{ itemsCount }}
               </span>
             </RouterLink>
@@ -65,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -75,6 +72,13 @@ const { t } = useI18n()
 const settings = useSettingsStore()
 
 const { itemsCount } = storeToRefs(useCartStore())
+
+// The badge shows a bare number; this is what a screen reader announces. It is
+// the only place the count is put into a sentence, so it is the only place that
+// has to get "1 item" right rather than reading out "1 itens".
+const cartCountLabel = computed(() =>
+  itemsCount.value === 1 ? t('nav.cartCountOne') : t('nav.cartCount', { count: itemsCount.value }),
+)
 </script>
 
 <style scoped>

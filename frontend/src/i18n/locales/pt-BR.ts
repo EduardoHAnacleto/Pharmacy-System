@@ -15,6 +15,7 @@ export default {
   nav: {
     home: 'Principal',
     cart: 'Carrinho de Compras',
+    cartCountOne: '1 item no carrinho',
     cartCount: '{count} itens no carrinho',
     contact: 'Contato',
     login: 'Login',

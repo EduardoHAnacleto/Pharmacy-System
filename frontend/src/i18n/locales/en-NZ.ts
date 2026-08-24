@@ -15,6 +15,7 @@ export default {
   nav: {
     home: 'Home',
     cart: 'Cart',
+    cartCountOne: '1 item in cart',
     cartCount: '{count} items in cart',
     contact: 'Contact',
     login: 'Log in',

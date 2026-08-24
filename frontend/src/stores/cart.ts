@@ -141,6 +141,13 @@ export const useCartStore = defineStore('cart', {
       const existing = this.items.find((i) => i.id === product.id)
       if (existing) {
         existing.quantity++
+
+        // Refresh the prescription flag rather than only counting up. The cart
+        // lives in localStorage for 24 hours, so an existing line can predate
+        // the flag entirely, or predate the shop turning it on. Left alone, two
+        // units of an antibiotic sit in the basket with the notice never
+        // appearing - the wrong direction for this particular field to fail in.
+        existing.requiresPrescription = product.requiresPrescription
       } else {
         this.items.push({ ...product, quantity: 1 })
       }

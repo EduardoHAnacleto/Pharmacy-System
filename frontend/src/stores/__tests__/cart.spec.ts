@@ -83,6 +83,22 @@ describe('cart store', () => {
       expect(cart.hasPrescriptionItems).toBe(false)
     })
 
+    it('picks the flag up on a line that predates it', () => {
+      // A cart lives 24 hours in localStorage, so an existing line can be older
+      // than the field, or older than the shop turning it on. Adding a second
+      // unit used to only increment the quantity: two boxes of an antibiotic in
+      // the basket and the notice never appearing.
+      const cart = useCartStore()
+
+      cart.addItem(item({ id: 7 }))
+      delete (cart.items[0] as { requiresPrescription?: boolean }).requiresPrescription
+
+      cart.addItem(item({ id: 7, requiresPrescription: true }))
+
+      expect(cart.items[0]?.quantity).toBe(2)
+      expect(cart.hasPrescriptionItems).toBe(true)
+    })
+
     it('keeps the flag through a save and reload', () => {
       const cart = useCartStore()
       cart.addItem(item({ id: 1, requiresPrescription: true }))

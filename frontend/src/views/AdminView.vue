@@ -545,10 +545,23 @@ const priceBefore = computed<number | null>(() =>
     : null,
 )
 
+/**
+ * The price, or null when the box is empty.
+ *
+ * The same trap priceBefore above was written for: clearing a `v-model.number`
+ * input leaves '', not null, so a bare `form.price === null` let an empty price
+ * through. The comparison below then coerced `'' < 10` to `0 < 10` and reported
+ * the form as valid, so submit fired and the server rejected `price=` — a
+ * request error where the form should simply have said what was missing.
+ */
+const price = computed<number | null>(() =>
+  typeof form.price === 'number' && Number.isFinite(form.price) ? form.price : null,
+)
+
 const isFormValid = computed(() => {
   if (
     !form.name ||
-    form.price === null ||
+    price.value === null ||
     form.categoryId === null ||
     !form.dateStart ||
     !form.dateEnd
@@ -561,7 +574,7 @@ const isFormValid = computed(() => {
   if (!editingId.value && !imageFile.value) return false
 
   // Only a supplied original price has to be a real discount.
-  return priceBefore.value === null || form.price < priceBefore.value
+  return priceBefore.value === null || price.value < priceBefore.value
 })
 
 /* ======================

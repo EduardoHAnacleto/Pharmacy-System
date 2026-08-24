@@ -51,7 +51,7 @@ import { endingSoonIn } from '@/utils/promotionUrgency'
 import type { PromotionFilter } from '@/services/itemPromotionService'
 
 const { t } = useI18n()
-const { promotions, loading, hasMore, totalItems, loadMore, reset, applyFilter } =
+const { promotions, loading, hasMore, totalItems, loadMore, reload, applyFilter } =
   useInfinitePromotions()
 
 const countLabel = computed(() =>
@@ -97,9 +97,13 @@ async function onFilterChange(filter: PromotionFilter) {
 onMounted(async () => {
   startSignalR()
 
+  // reload(), not reset() + loadMore(). The latter empties the grid and then
+  // returns without doing anything if a page request is already open — and the
+  // response to that one, when it lands, appends page N to an empty list, so
+  // pages one to N-1 simply vanish until the visitor scrolls again. A promotion
+  // changing while the grid is loading is exactly when this fires.
   onPromotionsChanged(() => {
-    reset()
-    loadMore()
+    void reload()
   })
 
   observer = new IntersectionObserver(

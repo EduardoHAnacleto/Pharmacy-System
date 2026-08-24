@@ -560,7 +560,8 @@ namespace Storefront.Api.Migrations
                         .HasColumnName("address");
 
                     b.Property<string>("BusinessNumber")
-                        .HasColumnType("longtext")
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
                         .HasColumnName("business_number");
 
                     b.Property<string>("City")
@@ -682,11 +683,13 @@ namespace Storefront.Api.Migrations
                         .HasColumnName("tagline");
 
                     b.Property<string>("TechnicalManagerLicense")
-                        .HasColumnType("longtext")
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)")
                         .HasColumnName("technical_manager_license");
 
                     b.Property<string>("TechnicalManagerName")
-                        .HasColumnType("longtext")
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)")
                         .HasColumnName("technical_manager_name");
 
                     b.Property<string>("TimeZone")

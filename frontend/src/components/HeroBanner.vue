@@ -44,6 +44,17 @@ const settings = useSettingsStore()
 const subtitle = computed(() => settings.settings.tagline?.trim() || t('home.heroSubtitle'))
 
 const promises = computed<string[]>(() => {
+  // Nothing until the shop's own settings have actually arrived.
+  //
+  // main.ts starts settings.load() without awaiting it, so the first render
+  // runs against DEFAULT_SETTINGS - and those carry deliveryEnabled: true with
+  // deliveryFee: 0, while the backend's own default fee is 8. Reading them
+  // would print "Entrega grátis" above the fold for a shop that charges, on
+  // every cold load. The error case is worse: load() swallows its failure and
+  // leaves the defaults in place, so the false claim would never correct
+  // itself. An empty hero for a moment is the honest version.
+  if (!settings.loaded || settings.error) return []
+
   const s = settings.settings
   const out: string[] = []
 
