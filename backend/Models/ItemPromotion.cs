@@ -8,7 +8,12 @@ namespace Storefront.Api.Models
         public int Id { get; set; }
         public string Name { get; set; } = null!;
         public decimal Price { get; set; }
-        public decimal PriceBefore { get; set; }
+        /// <summary>
+        /// The original price, when there is one. Null means the item is simply
+        /// sold at <see cref="Price"/>, which the storefront renders without a
+        /// strikethrough.
+        /// </summary>
+        public decimal? PriceBefore { get; set; }
 
         /// <summary>
         /// Relative URL actually served for this promotion. Equal to the linked

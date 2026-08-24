@@ -442,11 +442,23 @@ function handleImageUpload(event: Event) {
 /* ======================
    VALIDATION
 ====================== */
+/**
+ * The original price, or null when the field is left blank.
+ *
+ * Blanking a number input under `v-model.number` yields '' rather than null,
+ * so both spellings of "not given" collapse to null here. Absent is a
+ * legitimate answer: the item is then sold at `price` alone.
+ */
+const priceBefore = computed<number | null>(() =>
+  typeof form.priceBefore === 'number' && Number.isFinite(form.priceBefore)
+    ? form.priceBefore
+    : null,
+)
+
 const isFormValid = computed(() => {
   if (
     !form.name ||
     form.price === null ||
-    form.priceBefore === null ||
     form.categoryId === null ||
     !form.dateStart ||
     !form.dateEnd
@@ -458,7 +470,8 @@ const isFormValid = computed(() => {
   // existing media asset alone.
   if (!editingId.value && !imageFile.value) return false
 
-  return form.price < form.priceBefore
+  // Only a supplied original price has to be a real discount.
+  return priceBefore.value === null || form.price < priceBefore.value
 })
 
 /* ======================
@@ -483,7 +496,7 @@ async function create() {
   const payload: PromotionCreatePayload = {
     name: form.name,
     price: form.price!,
-    priceBefore: form.priceBefore!,
+    priceBefore: priceBefore.value,
     image: imageFile.value!,
     dateStart: form.dateStart,
     dateEnd: form.dateEnd,
@@ -499,7 +512,7 @@ async function saveEdit(id: number) {
   const payload: PromotionUpdatePayload = {
     name: form.name,
     price: form.price!,
-    priceBefore: form.priceBefore!,
+    priceBefore: priceBefore.value,
     dateStart: new Date(form.dateStart).toISOString(),
     dateEnd: new Date(form.dateEnd).toISOString(),
     publish: form.publish,

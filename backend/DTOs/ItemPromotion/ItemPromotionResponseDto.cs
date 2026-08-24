@@ -7,7 +7,9 @@ namespace Storefront.Api.DTOs.ItemPromotion
         public string Name { get; set; } = string.Empty;
 
         public decimal Price { get; set; }
-        public decimal PriceBefore { get; set; }
+
+        /// <summary>Null when the item carries no original price to strike through.</summary>
+        public decimal? PriceBefore { get; set; }
 
         public string ImageUrl { get; set; } = string.Empty;
 

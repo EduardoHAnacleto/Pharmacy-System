@@ -9,7 +9,9 @@ import type { PagedResult } from '@/types/pagedResult'
 export interface PromotionCreatePayload {
   name: string
   price: number
-  priceBefore: number
+
+  /** Optional: null creates an item sold at a single price, with no strikethrough. */
+  priceBefore: number | null
   image: File
 
   dateStart: string
@@ -27,7 +29,7 @@ export interface PromotionCreatePayload {
 export interface PromotionUpdatePayload {
   name: string
   price: number
-  priceBefore: number
+  priceBefore: number | null
   dateStart: string
   dateEnd: string
   publish: boolean
@@ -127,7 +129,11 @@ export const usePromotionsStore = defineStore('promotions', {
 
       formData.append('name', payload.name)
       formData.append('price', payload.price.toString())
-      formData.append('priceBefore', payload.priceBefore.toString())
+      // Omitted rather than sent empty: multipart carries no null, and an empty
+      // string binds to 0 server-side, which fails the range check.
+      if (payload.priceBefore !== null) {
+        formData.append('priceBefore', payload.priceBefore.toString())
+      }
       formData.append('image', payload.image)
 
       formData.append('dateStart', payload.dateStart)

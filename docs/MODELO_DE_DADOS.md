@@ -31,7 +31,7 @@ erDiagram
         int id PK
         varchar name
         decimal price
-        decimal price_before
+        decimal price_before "nulo: item sem preço anterior"
         datetime date_start
         datetime date_end
         varchar status

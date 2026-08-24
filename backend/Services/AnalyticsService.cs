@@ -355,7 +355,8 @@ namespace Storefront.Api.Services
             // as a guard, but an edit or a data import can still produce it.
             var invertedPrice = await _context.ItemPromotions
                 .AsNoTracking()
-                .Where(p => p.Status != PromotionStatus.Archived && p.Price >= p.PriceBefore)
+                .Where(p => p.Status != PromotionStatus.Archived
+                            && p.PriceBefore != null && p.Price >= p.PriceBefore)
                 .Select(p => new { p.Id, p.Name })
                 .ToListAsync(ct);
 

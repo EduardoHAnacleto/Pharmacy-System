@@ -6,7 +6,9 @@ export interface ItemPromotion {
   name: string
 
   price: number
-  priceBefore: number
+
+  /** Null when the item has no original price to strike through. */
+  priceBefore: number | null
 
   imageUrl: string
 

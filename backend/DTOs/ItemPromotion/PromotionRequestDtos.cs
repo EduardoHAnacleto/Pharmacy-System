@@ -16,8 +16,12 @@ namespace Storefront.Api.DTOs.ItemPromotion
         [Range(0.01, 99_999_999.99)]
         public decimal Price { get; set; }
 
+        // Nullable because a promotion may simply have no "before" price: the
+        // storefront renders those as a single price with no strikethrough.
+        // As a non-nullable decimal an omitted field arrived as 0, failed the
+        // range check, and made the optional field impossible to leave out.
         [Range(0.01, 99_999_999.99)]
-        public decimal PriceBefore { get; set; }
+        public decimal? PriceBefore { get; set; }
 
         [Required]
         public DateTime DateStart { get; set; }

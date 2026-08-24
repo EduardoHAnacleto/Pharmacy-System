@@ -479,9 +479,12 @@ namespace Storefront.Api.Services
                     p.DateEnd >= now);
 
         private static string? ValidateWindowAndPrices(
-            decimal price, decimal priceBefore, DateTime dateStart, DateTime dateEnd)
+            decimal price, decimal? priceBefore, DateTime dateStart, DateTime dateEnd)
         {
-            if (price >= priceBefore)
+            // Only meaningful when an original price was supplied: without one
+            // there is nothing to be a discount from, and the item is sold at
+            // Price alone.
+            if (priceBefore.HasValue && price >= priceBefore.Value)
                 return "Preço promocional deve ser menor que o preço original.";
 
             if (dateStart > dateEnd)
