@@ -136,3 +136,79 @@ a {
   color: var(--promo-ending);
   font-weight: 600;
 }
+
+/*
+ * HOW MUCH OFF
+ *
+ * Neither of these takes the shop's configured colours, and both are fixed
+ * rather than themable. The saving is money the customer keeps, so it is green
+ * wherever it appears; the badge is near-black because red is already spoken for
+ * by the countdown, and a card can carry both at once. A discount badge in the
+ * same red as an expiry warning makes the two read as one alarm.
+ *
+ * Near-black also survives any brand palette. --brand-primary is whatever a shop
+ * typed in and can be pale enough to vanish against a white card.
+ */
+:root {
+  --promo-discount: #1f2933;
+  --promo-saved: #0e6b45;
+}
+
+.promo-discount {
+  /* Opposite corner from .promo-ending__badge, which sits top-left. */
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+
+  padding: 0.32rem 0.55rem;
+  border-radius: 4px;
+  background-color: var(--promo-discount);
+  color: #fff;
+
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+
+  box-shadow: 0 0.125rem 0.35rem rgba(0, 0, 0, 0.3);
+}
+
+.promo-saved {
+  margin-top: 0.15rem;
+  color: var(--promo-saved);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/*
+ * PRODUCT NAME
+ *
+ * h5 is 20px, and a pharmacy product name is long — "Dipirona Monoidratada
+ * 500mg - 20 comprimidos" wrapped to four lines in a 163px column and made the
+ * name, on its own, the tallest thing on the card.
+ *
+ * Smaller rather than truncated. The distinguishing part of these names is the
+ * dosage and the count, which is where an ellipsis lands: 500mg and 750mg are
+ * different medicines, and a card that hides which one it is has failed at the
+ * only job it has.
+ */
+.promo-name {
+  font-size: 0.98rem;
+  line-height: 1.25;
+  margin-bottom: 0.4rem;
+}
+
+/*
+ * RESULT COUNT
+ */
+.results-count {
+  font-size: 0.92rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.results-count__urgent {
+  color: var(--promo-ending);
+  font-weight: 600;
+}

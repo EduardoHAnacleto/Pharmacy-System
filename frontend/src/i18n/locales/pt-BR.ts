@@ -15,6 +15,7 @@ export default {
   nav: {
     home: 'Principal',
     cart: 'Carrinho de Compras',
+    cartCount: '{count} itens no carrinho',
     contact: 'Contato',
     login: 'Login',
     admin: 'Administração',
@@ -25,13 +26,36 @@ export default {
   home: {
     loading: 'Carregando produtos...',
     loadingMore: 'Carregando mais...',
+
+    // A primeira tela. As promessas são montadas a partir de store_settings,
+    // então uma loja que não entrega nunca promete entrega.
+    heroTitle: 'Promoções da semana',
+    heroSubtitle: 'Peça pelo WhatsApp e retire hoje, ou receba em casa.',
+    promisesLabel: 'O que esta loja oferece',
+    promisePickup: 'Retirada no local',
+    promiseDelivery: 'Entrega em casa',
+    promiseDeliveryCity: 'Entrega em {city}',
+    promiseDeliveryCities: 'Entrega em {count} cidades',
+    promiseFreeDelivery: 'Entrega grátis',
+    promiseMinOrder: 'Pedido mínimo {amount}',
+
+    // Contagem de resultados. O total vem da API; o "terminam esta semana" só
+    // aparece quando a lista inteira já foi carregada e pode ser contada.
+    countOne: '1 promoção',
+    count: '{count} promoções',
+    countEndingSoonOne: '1 termina esta semana',
+    countEndingSoon: '{count} terminam esta semana',
   },
 
   product: {
     empty: 'Nenhum produto disponível',
     add: 'Adicionar',
     imageAlt: 'Imagem de {name}',
-    validity: 'Promoção válida de {from} até {to}',
+
+    // Só a data final. A de início não decide nada para quem está olhando:
+    // a promoção está no ar, e o que importa é até quando.
+    validity: 'Válida até {to}',
+    saved: 'economize {amount}',
 
     // Countdown carried by a promotion in its final week. daysLeft is only ever
     // reached with two days or more, so it needs no singular form.
@@ -48,6 +72,7 @@ export default {
     minPrice: 'Preço mín.',
     maxPrice: 'Preço máx.',
     sort: 'Ordenar',
+    more: 'Mais filtros',
     clear: 'Limpar',
     noResults: 'Nenhuma promoção encontrada com esses filtros.',
     sortOption: {

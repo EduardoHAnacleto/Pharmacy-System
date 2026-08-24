@@ -1,47 +1,123 @@
 <template>
   <header class="hero">
-    <!-- CONFIGURED LOGO -->
-    <img
-      v-if="settings.settings.logoUrl"
-      :src="settings.settings.logoUrl"
-      :alt="settings.settings.storeName"
-      class="hero-logo"
-    />
+    <div class="container px-4 px-lg-5">
+      <!--
+        No shop name here. NavBar prints it two centimetres above, and repeating
+        it cost 25px of the fold to tell a visitor something they had just read.
+      -->
+      <h1 class="hero-title">{{ t('home.heroTitle') }}</h1>
 
-    <!-- FALLBACK -->
-    <div v-else class="hero-text text-center">
-      <h1 class="m-0 fw-bold">{{ settings.settings.storeName }}</h1>
-      <p v-if="settings.settings.tagline" class="m-0 mt-2 lead">
-        {{ settings.settings.tagline }}
-      </p>
+      <p class="hero-sub">{{ subtitle }}</p>
+
+      <!-- WHAT THE SHOP PROMISES -->
+      <ul v-if="promises.length > 0" class="hero-promises" :aria-label="t('home.promisesLabel')">
+        <li v-for="promise in promises" :key="promise">{{ promise }}</li>
+      </ul>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '@/stores/settings'
+import { formatMoney } from '@/utils/format'
 
+/**
+ * THE FIRST SCREEN
+ *
+ * This used to be the shop's logo on a dark band and nothing else — 173px of a
+ * phone's 844, carrying no words, above a six-field filter form. Measured on
+ * the running stack, the first product card began at 571px: more than two
+ * thirds of the fold spent before anything was for sale.
+ *
+ * What replaces it is text, because text is what answers the question a visitor
+ * arrives with. The logo is not lost: NavBar already renders it, and it is a
+ * shop's identity rather than its offer.
+ *
+ * Every promise below is read from store_settings, so a shop that does not
+ * deliver never claims to. Nothing here is hardcoded about this pharmacy.
+ */
+const { t } = useI18n()
 const settings = useSettingsStore()
+
+const subtitle = computed(() => settings.settings.tagline?.trim() || t('home.heroSubtitle'))
+
+const promises = computed<string[]>(() => {
+  const s = settings.settings
+  const out: string[] = []
+
+  if (s.pickupEnabled) out.push(t('home.promisePickup'))
+
+  if (s.deliveryEnabled) {
+    const cities = settings.deliveryCities
+
+    // One city is worth naming; a list is not, and "entrega em 6 cidades" is
+    // the honest summary rather than a truncated list ending in an ellipsis.
+    if (cities.length === 1) {
+      out.push(t('home.promiseDeliveryCity', { city: cities[0] }))
+    } else if (cities.length > 1) {
+      out.push(t('home.promiseDeliveryCities', { count: cities.length }))
+    } else {
+      out.push(t('home.promiseDelivery'))
+    }
+
+    if (s.deliveryFee <= 0) {
+      out.push(t('home.promiseFreeDelivery'))
+    } else if (s.minDeliveryTotal > 0) {
+      out.push(t('home.promiseMinOrder', { amount: formatMoney(s.minDeliveryTotal) }))
+    }
+  }
+
+  return out
+})
 </script>
 
 <style scoped>
+/*
+ * A dark wash over the shop's own colour, rather than the colour alone.
+ * primaryColor is whatever a shop typed into its settings — it can be pale
+ * yellow — and white text on it would be unreadable. The overlay guarantees
+ * contrast for any value while still letting the brand through.
+ */
 .hero {
-  background-color: #212529;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem 0;
-}
-
-.hero-logo {
-  width: min(90vw, 1400px);
-  height: auto;
-}
-
-/* Falls back to the shop's name when no logo is configured, so a new shop is
-   presentable before it has uploaded any artwork. */
-.hero-text {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.68)), var(--brand-primary, #212529);
   color: #fff;
-  padding: 2rem 1rem;
+  padding: 1.15rem 0 1.25rem;
+}
+
+.hero-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 5.5vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.hero-sub {
+  margin: 0.35rem 0 0;
+  font-size: clamp(0.92rem, 2.6vw, 1.02rem);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 44ch;
+}
+
+.hero-promises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hero-promises li {
+  font-size: 0.82rem;
+  line-height: 1;
+  padding: 0.4rem 0.7rem;
+  border-radius: 50rem;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
 }
 </style>

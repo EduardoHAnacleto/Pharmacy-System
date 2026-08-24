@@ -31,8 +31,20 @@
             </RouterLink>
           </li>
           <li class="nav-item">
-            <RouterLink to="/cart" class="nav-link" active-class="active">
+            <RouterLink to="/cart" class="nav-link cart-link" active-class="active">
               {{ t('nav.cart') }}
+              <!--
+                The count used to live only on a floating button stacked above
+                the WhatsApp one, both covering the grid. Here it is attached to
+                the word it counts, and the corner is free.
+              -->
+              <span
+                v-if="itemsCount > 0"
+                class="cart-count"
+                :aria-label="t('nav.cartCount', { count: itemsCount })"
+              >
+                {{ itemsCount }}
+              </span>
             </RouterLink>
           </li>
           <li class="nav-item">
@@ -53,17 +65,47 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useCartStore } from '@/stores/cart'
 import { useSettingsStore } from '@/stores/settings'
 
 const { t } = useI18n()
 const settings = useSettingsStore()
+
+const { itemsCount } = storeToRefs(useCartStore())
 </script>
 
 <style scoped>
 .navbar-logo {
   height: 32px;
   width: auto;
+}
+
+.cart-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/*
+ * Not the hardcoded red the floating badge used: a count is information, not an
+ * alarm, and red on a shop that has chosen its own palette was the one colour
+ * nobody picked.
+ */
+.cart-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.35rem;
+  border-radius: 50rem;
+  background: var(--brand-primary, #0d6efd);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 </style>

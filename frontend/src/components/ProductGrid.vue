@@ -1,10 +1,15 @@
 <template>
-  <section class="py-5">
-    <div class="container px-4 px-lg-5 mt-5">
+  <!--
+    py-4 and no mt-5. The grid opened with 3rem of section padding plus another
+    3rem of margin — 96px of nothing between the filters and the first card, on
+    a screen where the first card was already below the fold.
+  -->
+  <section class="py-3">
+    <div class="container px-4 px-lg-5">
       <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
         <!-- PRODUCTS -->
         <div
-          class="col mb-5"
+          class="col mb-4"
           v-for="row in rows"
           :key="row.item.id"
           :data-promotion-id="row.item.id"
@@ -28,9 +33,21 @@
               {{ row.urgency.label }}
             </span>
 
-            <div class="card-body p-4">
+            <!-- HOW MUCH OFF -->
+            <!--
+              Opposite corner from the countdown on purpose: the two can appear
+              on the same card, and they say different things.
+            -->
+            <span v-if="row.discount" class="promo-discount"> −{{ row.discount.percent }}% </span>
+
+            <!--
+              p-3, not p-4. Two columns on a 390px phone leave each card about
+              163px wide; 24px of padding on every side of that is a quarter of
+              the card spent on air, and it pushed the second row off the fold.
+            -->
+            <div class="card-body p-3">
               <div class="text-center">
-                <h5 class="fw-bolder">{{ row.item.name }}</h5>
+                <h5 class="promo-name fw-bolder">{{ row.item.name }}</h5>
 
                 <!-- PROMOTED -->
                 <div v-if="row.item.priceBefore">
@@ -39,6 +56,10 @@
                   </span>
                   <br />
                   <span class="fw-bold">{{ formatMoney(row.item.price) }}</span>
+
+                  <span v-if="row.discount" class="promo-saved d-block">
+                    {{ t('product.saved', { amount: formatMoney(row.discount.saved) }) }}
+                  </span>
                 </div>
 
                 <!-- NOT PROMOTED -->
@@ -51,23 +72,18 @@
                   two cannot both apply and the muted grey would win.
                 -->
                 <small
-                  v-if="row.item.dateStart && row.item.dateEnd"
+                  v-if="row.item.dateEnd"
                   class="d-block mt-2"
                   :class="row.urgency ? 'promo-ending__validity' : 'text-muted'"
                 >
-                  {{
-                    t('product.validity', {
-                      from: formatDate(row.item.dateStart),
-                      to: formatDate(row.item.dateEnd),
-                    })
-                  }}
+                  {{ t('product.validity', { to: formatDate(row.item.dateEnd) }) }}
                 </small>
               </div>
             </div>
 
-            <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+            <div class="card-footer p-3 pt-0 border-top-0 bg-transparent">
               <div class="text-center">
-                <button class="btn btn-outline-dark mt-auto" @click="addToCart(row.item)">
+                <button class="btn btn-outline-dark btn-sm mt-auto" @click="addToCart(row.item)">
                   {{ t('product.add') }}
                 </button>
               </div>
@@ -93,6 +109,7 @@ import { useJsonLd } from '@/composables/useJsonLd'
 import { track, trackPromotionView } from '@/services/analytics'
 import { formatDate, formatMoney } from '@/utils/format'
 import { endingSoonIn } from '@/utils/promotionUrgency'
+import { discountOf, type PromotionDiscount } from '@/utils/promotionPricing'
 import type { ItemPromotion } from '@/types/itemPromotion'
 
 const props = defineProps<{
@@ -123,6 +140,8 @@ interface CardRow {
   item: ItemPromotion
   /** Null unless the promotion is inside its last week. */
   urgency: { label: string; critical: boolean } | null
+  /** Null when there is no old price to compare against. */
+  discount: PromotionDiscount | null
 }
 
 const rows = computed<CardRow[]>(() => {
@@ -131,16 +150,19 @@ const rows = computed<CardRow[]>(() => {
   return props.products.map((item) => {
     const days = endingSoonIn(item.dateEnd, now)
 
-    if (days === null) return { item, urgency: null }
-
     return {
       item,
-      urgency: {
-        label: endingLabel(days),
-        // Only the last day or two pulse. Every card in a full grid can be
-        // inside the week, and a dozen pulsing badges is noise, not emphasis.
-        critical: days <= 1,
-      },
+      urgency:
+        days === null
+          ? null
+          : {
+              label: endingLabel(days),
+              // Only the last day or two pulse. Every card in a full grid can
+              // be inside the week, and a dozen pulsing badges is noise, not
+              // emphasis.
+              critical: days <= 1,
+            },
+      discount: discountOf(item.price, item.priceBefore),
     }
   })
 })

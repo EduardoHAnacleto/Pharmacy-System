@@ -15,6 +15,7 @@ export default {
   nav: {
     home: 'Home',
     cart: 'Cart',
+    cartCount: '{count} items in cart',
     contact: 'Contact',
     login: 'Log in',
     admin: 'Admin',
@@ -25,13 +26,36 @@ export default {
   home: {
     loading: 'Loading products...',
     loadingMore: 'Loading more...',
+
+    // The first screen. The promises are assembled from store_settings, so a
+    // shop that does not deliver never claims to.
+    heroTitle: 'This week’s offers',
+    heroSubtitle: 'Order on WhatsApp and collect today, or have it delivered.',
+    promisesLabel: 'What this shop offers',
+    promisePickup: 'Collect in store',
+    promiseDelivery: 'Home delivery',
+    promiseDeliveryCity: 'Delivery in {city}',
+    promiseDeliveryCities: 'Delivery to {count} towns',
+    promiseFreeDelivery: 'Free delivery',
+    promiseMinOrder: 'Minimum order {amount}',
+
+    // Result count. The total comes from the API; "ending this week" only
+    // appears once the whole list is loaded and can honestly be counted.
+    countOne: '1 offer',
+    count: '{count} offers',
+    countEndingSoonOne: '1 ends this week',
+    countEndingSoon: '{count} end this week',
   },
 
   product: {
     empty: 'No products available',
     add: 'Add',
     imageAlt: 'Photo of {name}',
-    validity: 'Offer valid from {from} to {to}',
+
+    // The end date only. The start decides nothing for someone looking at it:
+    // the offer is live, and what matters is how long it stays that way.
+    validity: 'Valid until {to}',
+    saved: 'save {amount}',
 
     // Countdown carried by a promotion in its final week. daysLeft is only ever
     // reached with two days or more, so it needs no singular form.
@@ -48,6 +72,7 @@ export default {
     minPrice: 'Min price',
     maxPrice: 'Max price',
     sort: 'Sort',
+    more: 'More filters',
     clear: 'Clear',
     noResults: 'No offers match those filters.',
     sortOption: {
