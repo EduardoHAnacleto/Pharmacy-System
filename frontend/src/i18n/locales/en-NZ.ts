@@ -56,6 +56,7 @@ export default {
     // the offer is live, and what matters is how long it stays that way.
     validity: 'Valid until {to}',
     saved: 'save {amount}',
+    requiresPrescription: 'Prescription required',
 
     // Countdown carried by a promotion in its final week. daysLeft is only ever
     // reached with two days or more, so it needs no singular form.
@@ -98,6 +99,16 @@ export default {
     continue: 'Continue',
     increase: 'Increase quantity',
     decrease: 'Decrease quantity',
+    prescriptionNotice:
+      'Some items need a prescription. Have it with you at collection or delivery.',
+  },
+
+  // The model names these generically — businessNumber holds a CNPJ in Brazil
+  // and an NZBN here. The market's own term belongs in the translation.
+  footer: {
+    businessNumber: 'NZBN {value}',
+    technicalManager: 'Responsible pharmacist: {name}',
+    technicalManagerLicensed: 'Responsible pharmacist: {name} — {license}',
   },
 
   checkout: {
@@ -229,6 +240,9 @@ export default {
     collectPostalCode: 'Ask for a postcode at checkout',
     openingHours: 'Opening hours',
     addRange: 'Add hours',
+    businessNumber: 'Company number',
+    technicalManagerName: 'Responsible pharmacist',
+    technicalManagerLicense: 'Registration number',
     footerText: 'Footer text',
     saved: 'Settings saved.',
     saveFailed: 'Could not save the settings.',
@@ -244,9 +258,18 @@ export default {
     dateEnd: 'Ends',
     image: 'Image',
     publish: 'Published',
+    requiresPrescription: 'Prescription required',
     savePromotion: 'Save offer',
     formInvalid: 'Fill every field correctly. The price must be lower than the price before.',
     registered: 'Offers',
+
+    // Broadcast. The message is assembled from these lines and opened in
+    // WhatsApp with no recipient, so the shopkeeper picks who receives it.
+    broadcastEndingSoon: 'Share {count} ending soon',
+    broadcastHeading: 'Offers ending at {store}:',
+    broadcastLine: '• {name} — {price} ({deadline})',
+    broadcastLineDiscounted: 'was {was}, now {now}, −{percent}%',
+
     validity: 'Validity',
     status: 'Status',
     edit: 'Edit',

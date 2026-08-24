@@ -201,6 +201,35 @@ a {
 }
 
 /*
+ * PRESCRIPTION
+ *
+ * Amber, not red: this is a condition of sale, not an error and not the expiry
+ * warning. Reusing the countdown's red would make a routine antibiotic look
+ * like an emergency, and put two different meanings on one colour.
+ *
+ * The icon is decorative — the words carry it — so it is aria-hidden in the
+ * markup and the pill reads as text to a screen reader.
+ */
+:root {
+  --promo-rx: #8a5a00;
+  --promo-rx-wash: #fdf3dd;
+}
+
+.promo-rx {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.45rem;
+  padding: 0.22rem 0.5rem;
+  border-radius: 50rem;
+  background: var(--promo-rx-wash);
+  color: var(--promo-rx);
+  font-size: 0.73rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/*
  * RESULT COUNT
  */
 .results-count {

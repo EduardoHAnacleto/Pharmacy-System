@@ -57,6 +57,52 @@ public class StoreSettingsEndpointsTests
     // ===============================
 
     [SkippableFact]
+    public async Task Put_ThenGet_ReturnsTheComplianceDetails()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var update = Valid();
+        update.BusinessNumber = "12.345.678/0001-90";
+        update.TechnicalManagerName = "Ana Ribeiro";
+        update.TechnicalManagerLicense = "CRF-SP 12345";
+
+        var response = await client.PutAsJsonAsync("/api/v1/store-settings", update);
+        response.EnsureSuccessStatusCode();
+
+        // Anonymously: these exist in order to be printed in the storefront's
+        // footer, so an unauthenticated visitor is exactly who must see them.
+        using var anonymous = _fixture.CreateClient();
+        var saved = await anonymous.GetFromJsonAsync<StoreSettingsDto>("/api/v1/store-settings");
+
+        Assert.Equal("12.345.678/0001-90", saved!.BusinessNumber);
+        Assert.Equal("Ana Ribeiro", saved.TechnicalManagerName);
+        Assert.Equal("CRF-SP 12345", saved.TechnicalManagerLicense);
+    }
+
+    [SkippableFact]
+    public async Task Put_WithBlankComplianceDetails_StoresNullRatherThanEmpty()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var update = Valid();
+        update.BusinessNumber = "   ";
+        update.TechnicalManagerName = "";
+
+        var response = await client.PutAsJsonAsync("/api/v1/store-settings", update);
+        response.EnsureSuccessStatusCode();
+
+        using var anonymous = _fixture.CreateClient();
+        var saved = await anonymous.GetFromJsonAsync<StoreSettingsDto>("/api/v1/store-settings");
+
+        // Null, not "": the footer renders each line only when it has one, and an
+        // empty string is truthy enough to print a label with nothing after it.
+        Assert.Null(saved!.BusinessNumber);
+        Assert.Null(saved.TechnicalManagerName);
+    }
+
+    [SkippableFact]
     public async Task Put_ThenGet_ReturnsTheSavedConfiguration()
     {
         Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");

@@ -27,7 +27,14 @@ function configureShop(
   return settings
 }
 
-function item(overrides: Partial<{ id: number; name: string; price: number }> = {}) {
+function item(
+  overrides: Partial<{
+    id: number
+    name: string
+    price: number
+    requiresPrescription: boolean
+  }> = {},
+) {
   return {
     id: 1,
     name: 'Dipirona',
@@ -42,6 +49,49 @@ describe('cart store', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     configureShop()
+  })
+
+  describe('prescription items', () => {
+    it('is false for an ordinary basket', () => {
+      const cart = useCartStore()
+
+      cart.addItem(item({ id: 1 }))
+      cart.addItem(item({ id: 2 }))
+
+      expect(cart.hasPrescriptionItems).toBe(false)
+    })
+
+    it('is true when any one item needs a prescription', () => {
+      // One notice for the basket, not one per line: the customer needs to know
+      // to bring the paper, and repeating it does not make it truer.
+      const cart = useCartStore()
+
+      cart.addItem(item({ id: 1 }))
+      cart.addItem(item({ id: 2, requiresPrescription: true }))
+
+      expect(cart.hasPrescriptionItems).toBe(true)
+    })
+
+    it('treats a basket saved before the field existed as ordinary', () => {
+      // A cart restored from localStorage a day later can hold items with no
+      // such property. Absent has to read as false, not as prescription-only.
+      const cart = useCartStore()
+
+      cart.addItem(item({ id: 1 }))
+      delete (cart.items[0] as { requiresPrescription?: boolean }).requiresPrescription
+
+      expect(cart.hasPrescriptionItems).toBe(false)
+    })
+
+    it('keeps the flag through a save and reload', () => {
+      const cart = useCartStore()
+      cart.addItem(item({ id: 1, requiresPrescription: true }))
+
+      const restored = useCartStore()
+      restored.loadFromStorage()
+
+      expect(restored.hasPrescriptionItems).toBe(true)
+    })
   })
 
   describe('totals', () => {

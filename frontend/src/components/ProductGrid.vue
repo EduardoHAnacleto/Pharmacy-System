@@ -1,6 +1,6 @@
 <template>
   <!--
-    py-4 and no mt-5. The grid opened with 3rem of section padding plus another
+    py-3 and no mt-5. The grid opened with 3rem of section padding plus another
     3rem of margin — 96px of nothing between the filters and the first card, on
     a screen where the first card was already below the fold.
   -->
@@ -48,6 +48,18 @@
             <div class="card-body p-3">
               <div class="text-center">
                 <h5 class="promo-name fw-bolder">{{ row.item.name }}</h5>
+
+                <!-- PRESCRIPTION -->
+                <!--
+                  Inline rather than a third corner badge: the image already
+                  carries the countdown and the discount, and this is not a
+                  promotional flag competing with them — it is a condition of
+                  sale, and it belongs with the words.
+                -->
+                <span v-if="row.item.requiresPrescription" class="promo-rx">
+                  <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
+                  {{ t('product.requiresPrescription') }}
+                </span>
 
                 <!-- PROMOTED -->
                 <div v-if="row.item.priceBefore">
@@ -210,6 +222,7 @@ function addToCart(item: ItemPromotion) {
     name: item.name,
     price: item.price,
     imageUrl: item.imageUrl,
+    requiresPrescription: item.requiresPrescription,
   })
 
   track('add_to_cart', item.id)

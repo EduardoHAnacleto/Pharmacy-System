@@ -22,6 +22,9 @@ export interface PromotionCreatePayload {
   categoryId: number
   productType: string
 
+  /** Whether the item may only be dispensed against a prescription. */
+  requiresPrescription: boolean
+
   // createdByUserId / createdByUserName are not sent: the API derives them from
   // the authenticated caller's token.
 }
@@ -35,6 +38,7 @@ export interface PromotionUpdatePayload {
   publish: boolean
   categoryId: number
   productType: string
+  requiresPrescription: boolean
 }
 
 export interface ReactivatePayload {
@@ -142,6 +146,7 @@ export const usePromotionsStore = defineStore('promotions', {
       formData.append('publish', String(payload.publish))
       formData.append('categoryId', payload.categoryId.toString())
       formData.append('productType', payload.productType)
+      formData.append('requiresPrescription', String(payload.requiresPrescription))
 
       try {
         const { data } = await api.post<ItemPromotion>('/item-promotions', formData, {

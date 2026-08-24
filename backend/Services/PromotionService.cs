@@ -123,6 +123,7 @@ namespace Storefront.Api.Services
 
                 DateStart = dto.DateStart,
                 DateEnd = dto.DateEnd,
+                RequiresPrescription = dto.RequiresPrescription,
 
                 Status = status,
                 CategoryId = dto.CategoryId,
@@ -175,6 +176,7 @@ namespace Storefront.Api.Services
             promotion.DateEnd = dto.DateEnd;
             promotion.CategoryId = dto.CategoryId;
             promotion.ProductType = dto.ProductType;
+            promotion.RequiresPrescription = dto.RequiresPrescription;
             promotion.Status = DeriveStatus(dto.Publish, dto.DateStart, dto.DateEnd, DateTime.UtcNow);
             promotion.UpdatedAt = DateTime.UtcNow;
 
@@ -260,6 +262,11 @@ namespace Storefront.Api.Services
                 Status = DeriveStatus(dto.Publish, dto.DateStart, dto.DateEnd, DateTime.UtcNow),
                 CategoryId = source.CategoryId,
                 ProductType = source.ProductType,
+
+                // Carried from the source like the category and the artwork: the
+                // same product runs again, and whether it needs a prescription is a
+                // fact about the medicine, not about this campaign.
+                RequiresPrescription = source.RequiresPrescription,
 
                 SourcePromotionId = source.Id,
 

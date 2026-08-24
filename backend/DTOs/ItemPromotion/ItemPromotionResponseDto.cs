@@ -17,6 +17,12 @@ namespace Storefront.Api.DTOs.ItemPromotion
         public DateTime DateEnd { get; set; }
 
         /// <summary>
+        /// True when the item may only be dispensed against a prescription, so the
+        /// storefront can say so on the card and again at checkout.
+        /// </summary>
+        public bool RequiresPrescription { get; set; }
+
+        /// <summary>
         /// Draft, Scheduled, Active, Expired or Archived. Replaces the isActive
         /// boolean, which collapsed four distinct states into false.
         /// </summary>

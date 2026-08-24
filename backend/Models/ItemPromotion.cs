@@ -26,6 +26,23 @@ namespace Storefront.Api.Models
         public DateTime DateStart { get; set; }
         public DateTime DateEnd { get; set; }
 
+        /// <summary>
+        /// Whether this item may only be dispensed against a prescription.
+        /// </summary>
+        /// <remarks>
+        /// The catalogue had no way to say it, so a shelf of antibiotics carried the
+        /// same "Adicionar" button as a bar of soap. This does not attempt to enforce
+        /// anything — the order still completes over WhatsApp, where a pharmacist
+        /// handles it — but it lets the storefront set the right expectation before a
+        /// customer builds a basket they cannot collect without a doctor.
+        /// <para>
+        /// Defaults to false so every existing row keeps its current meaning: the
+        /// migration must not silently mark a shampoo as prescription-only.
+        /// </para>
+        /// </remarks>
+        [Column("requires_prescription")]
+        public bool RequiresPrescription { get; set; }
+
         // ===== LIFECYCLE =====
 
         /// <summary>One of the constants on <see cref="PromotionStatus"/>.</summary>

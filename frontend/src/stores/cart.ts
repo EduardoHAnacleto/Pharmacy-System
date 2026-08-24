@@ -7,6 +7,18 @@ export interface CartItem {
   price: number
   imageUrl: string
   quantity: number
+
+  /**
+   * Whether this item may only be dispensed against a prescription.
+   *
+   * Carried into the cart rather than looked up again at checkout: the cart is
+   * restored from localStorage up to a day later, by which time the promotion it
+   * came from may have expired and no longer be fetchable.
+   *
+   * Optional so a basket saved before this field existed still loads — an absent
+   * value reads as false, which is what every item in such a basket was.
+   */
+  requiresPrescription?: boolean
 }
 
 type DeliveryType = 'pickup' | 'delivery'
@@ -44,6 +56,15 @@ export const useCartStore = defineStore('cart', {
 
     productsTotal: (state) =>
       state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+
+    /**
+     * Whether anything in the basket needs a prescription.
+     *
+     * Drives one notice at checkout rather than a repeated flag per line: the
+     * customer needs to know to bring the paper, and hearing it four times does
+     * not make it four times truer.
+     */
+    hasPrescriptionItems: (state) => state.items.some((item) => item.requiresPrescription === true),
 
     /**
      * The shop's delivery fee.

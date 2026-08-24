@@ -32,7 +32,8 @@ public class PromotionEndpointsTests
         decimal price = 9.90m,
         decimal? priceBefore = 19.90m,
         int categoryId = 1,
-        string? imageContentType = "image/png")
+        string? imageContentType = "image/png",
+        bool requiresPrescription = false)
     {
         var form = new MultipartFormDataContent
         {
@@ -43,6 +44,7 @@ public class PromotionEndpointsTests
             { new StringContent("true"), "IsActive" },
             { new StringContent(categoryId.ToString(System.Globalization.CultureInfo.InvariantCulture)), "CategoryId" },
             { new StringContent("default"), "ProductType" },
+            { new StringContent(requiresPrescription ? "true" : "false"), "RequiresPrescription" },
         };
 
         if (priceBefore.HasValue)
@@ -468,6 +470,51 @@ public class PromotionEndpointsTests
             "/api/v1/item-promotions/active?filter.search=nada-com-esse-nome");
 
         Assert.Empty(missed!.Items);
+    }
+
+    // ===============================
+    // PRESCRIPTION
+    // ===============================
+
+    [SkippableFact]
+    public async Task Create_CarriesThePrescriptionFlag()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        var response = await client.PostAsync(
+            "/api/v1/item-promotions",
+            BuildForm(ValidPng, name: $"Antibiotico{Guid.NewGuid():N}", requiresPrescription: true));
+
+        response.EnsureSuccessStatusCode();
+
+        var created = await response.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+        Assert.True(created!.RequiresPrescription);
+
+        // Through the database, not just echoed back from the request.
+        var fetched = await client.GetFromJsonAsync<ItemPromotionResponseDto>(
+            $"/api/v1/item-promotions/{created.Id}");
+
+        Assert.True(fetched!.RequiresPrescription);
+    }
+
+    [SkippableFact]
+    public async Task Create_DefaultsToNoPrescription()
+    {
+        Skip.IfNot(_fixture.DockerAvailable, "Docker is not available.");
+        using var client = await AuthenticatedClientAsync();
+
+        // The column carries a default of false so the migration cannot mark an
+        // existing shampoo as prescription-only, and a form that says nothing has
+        // to mean the same thing.
+        var response = await client.PostAsync(
+            "/api/v1/item-promotions",
+            BuildForm(ValidPng, name: $"Sabonete{Guid.NewGuid():N}"));
+
+        response.EnsureSuccessStatusCode();
+
+        var created = await response.Content.ReadFromJsonAsync<ItemPromotionResponseDto>();
+        Assert.False(created!.RequiresPrescription);
     }
 
     [SkippableFact]

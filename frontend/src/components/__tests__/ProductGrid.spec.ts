@@ -22,6 +22,7 @@ function promotion(overrides: Partial<ItemPromotion> = {}): ItemPromotion {
     imageUrl: '/images/promotions/1.png',
     dateStart: '2026-01-01T00:00:00Z',
     dateEnd: '2099-12-31T00:00:00Z',
+    requiresPrescription: false,
     status: 'Active',
     archivedAt: null,
     imageMissing: false,

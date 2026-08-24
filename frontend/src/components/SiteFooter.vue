@@ -5,6 +5,16 @@
 
       <p v-if="contactLine" class="m-0 small text-white-50">{{ contactLine }}</p>
 
+      <!-- WHO IS ANSWERABLE -->
+      <!--
+        The four things a customer looks for before sending money to a pharmacy
+        they have not used: the company's registration, and the professional
+        legally answerable for what it dispenses. The footer carried none of
+        them. Each line renders only when filled in, so a shop mid-setup shows
+        nothing rather than an empty label.
+      -->
+      <p v-if="complianceLine" class="m-0 mt-2 small text-white-50">{{ complianceLine }}</p>
+
       <p v-if="settings.settings.footerText" class="m-0 mt-2 small text-white-50">
         {{ settings.settings.footerText }}
       </p>
@@ -67,6 +77,35 @@ const year = new Date().getFullYear()
 const contactLine = computed(() => {
   const s = settings.settings
   return [s.address, s.city, s.phone].filter(Boolean).join(' · ') || null
+})
+
+/**
+ * The registration line, assembled from whatever the shop has filled in.
+ *
+ * The model names these generically — businessNumber holds a CNPJ here and an
+ * NZBN in New Zealand — and the market-specific wording lives in the
+ * translations, which is the layer that already differs per deployment.
+ */
+const complianceLine = computed(() => {
+  const s = settings.settings
+  const parts: string[] = []
+
+  if (s.businessNumber) {
+    parts.push(t('footer.businessNumber', { value: s.businessNumber }))
+  }
+
+  if (s.technicalManagerName) {
+    parts.push(
+      s.technicalManagerLicense
+        ? t('footer.technicalManagerLicensed', {
+            name: s.technicalManagerName,
+            license: s.technicalManagerLicense,
+          })
+        : t('footer.technicalManager', { name: s.technicalManagerName }),
+    )
+  }
+
+  return parts.length > 0 ? parts.join(' · ') : null
 })
 
 const hasSocial = computed(
